@@ -1,6 +1,8 @@
 package cas // import "github.com/chronos-tachyon/go-cas"
 
 import (
+	"errors"
+
 	"golang.org/x/net/context"
 )
 
@@ -9,7 +11,19 @@ import (
 // To store large objects, split them into smaller blocks.
 const BlockSize = 1 << 20
 
-// CAS is an interface for "content-addressible storage".
+// PadBlock allocates a new CAS block and copies the provided data to it.
+// The resulting block is padded until it is exactly BlockSize bytes long.
+func PadBlock(raw []byte) []byte {
+	if len(raw) > BlockSize {
+		panic(errors.New("CAS block is too long"))
+	}
+	block := make([]byte, BlockSize)
+	copy(block[:len(raw)], raw)
+	return block
+}
+
+// CAS is an interface for content-addressible storage.
+// http://en.wikipedia.org/wiki/Content-addressable_storage
 //
 // The core operations are Get, Put, and Free.
 type CAS interface {
