@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/chronos-tachyon/go-cas"
-	"github.com/chronos-tachyon/go-cas/cmd/casutil/libcasutil"
+	"github.com/chronos-tachyon/go-cas/libcasutil"
 	_ "github.com/chronos-tachyon/go-cas/localdisk"
 )
 

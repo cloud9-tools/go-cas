@@ -1,4 +1,4 @@
-package libcasutil // import "github.com/chronos-tachyon/go-cas/cmd/casutil/libcasutil"
+package libcasutil // import "github.com/chronos-tachyon/go-cas/libcasutil"
 
 import (
 	"fmt"
@@ -7,7 +7,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/chronos-tachyon/go-cas/cmd/casutil/internal/script"
+	"github.com/chronos-tachyon/go-cas/libcasutil/internal/script"
 	"golang.org/x/net/context"
 )
 

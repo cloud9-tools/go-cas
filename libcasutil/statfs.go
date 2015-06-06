@@ -1,4 +1,4 @@
-package libcasutil // import "github.com/chronos-tachyon/go-cas/cmd/casutil/libcasutil"
+package libcasutil // import "github.com/chronos-tachyon/go-cas/libcasutil"
 
 import (
 	"fmt"
