@@ -8,7 +8,7 @@ import (
 )
 
 // PadBlock allocates a new CAS block and copies the provided data to it.
-// The resulting block is always BlockSize bytes long.
+// The resulting block is padded until it is exactly BlockSize bytes long.
 func PadBlock(raw []byte) []byte {
 	if len(raw) > BlockSize {
 		panic(errors.New("CAS block is too long"))
@@ -18,7 +18,7 @@ func PadBlock(raw []byte) []byte {
 	return block
 }
 
-// Hash computes the Addr for the given CAS block.
+// Hash computes the Addr for the given CAS block.  The block must be padded.
 func Hash(block []byte) Addr {
 	if len(block) != BlockSize {
 		panic(errors.New("CAS block has the wrong length"))
@@ -30,6 +30,7 @@ func Hash(block []byte) Addr {
 	return addr
 }
 
+// EqualByteSlices returns true if the two slices are elementwise equal.
 func EqualByteSlices(a, b []byte) bool {
 	if len(a) != len(b) {
 		return false
@@ -42,6 +43,8 @@ func EqualByteSlices(a, b []byte) bool {
 	return true
 }
 
+// VerifyIntegrity returns nil if Hash(block) equals addr, or returns an
+// IntegrityError if the hashes are different.
 func VerifyIntegrity(addr Addr, block []byte) error {
 	addr2 := Hash(block)
 	if !EqualByteSlices(addr[:], addr2[:]) {
