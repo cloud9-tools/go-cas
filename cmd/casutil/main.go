@@ -8,8 +8,9 @@ import (
 	"os"
 	"time"
 
-	"github.com/chronos-tachyon/go-cas/casspec"
+	"github.com/chronos-tachyon/go-cas"
 	"github.com/chronos-tachyon/go-cas/cmd/casutil/libcasutil"
+	_ "github.com/chronos-tachyon/go-cas/localdisk"
 )
 
 const defaultSpec = "ram:0"
@@ -26,15 +27,15 @@ func main() {
 	timeoutFlag := flag.Duration("timeout", defaultTimeout, "timeout for CAS operations")
 	flag.Parse()
 
-	mainSpec, err := casspec.Parse(*mainSpecFlag)
+	mainSpec, err := cas.ParseSpec(*mainSpecFlag)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "error: --spec=%q: %v", *mainSpecFlag, mainSpec)
+		fmt.Fprintf(os.Stderr, "error: --spec=%q: %v\n", *mainSpecFlag, err)
 		os.Exit(2)
 	}
 
-	altSpec, err := casspec.Parse(*altSpecFlag)
+	altSpec, err := cas.ParseSpec(*altSpecFlag)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "error: --source=%q: %v", *altSpecFlag, altSpec)
+		fmt.Fprintf(os.Stderr, "error: --source=%q: %v\n", *altSpecFlag, err)
 		os.Exit(2)
 	}
 

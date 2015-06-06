@@ -4,32 +4,36 @@ import (
 	"golang.org/x/net/context"
 )
 
-func NopCloser(impl CAS) CAS {
-	return &nopCloser{impl}
+func NopCloser(next CAS) CAS {
+	return &nopCloserCAS{next}
 }
 
-type nopCloser struct{ impl CAS }
+type nopCloserCAS struct{ Next CAS }
 
-func (cas *nopCloser) Get(ctx context.Context, addr Addr) ([]byte, error) {
-	return cas.impl.Get(ctx, addr)
+func (cas *nopCloserCAS) Spec() Spec {
+	return cas.Next.Spec()
 }
 
-func (cas *nopCloser) Put(ctx context.Context, raw []byte) (Addr, error) {
-	return cas.impl.Put(ctx, raw)
+func (cas *nopCloserCAS) Get(ctx context.Context, addr Addr) ([]byte, error) {
+	return cas.Next.Get(ctx, addr)
 }
 
-func (cas *nopCloser) Release(ctx context.Context, addr Addr, shred bool) error {
-	return cas.impl.Release(ctx, addr, shred)
+func (cas *nopCloserCAS) Put(ctx context.Context, raw []byte) (Addr, error) {
+	return cas.Next.Put(ctx, raw)
 }
 
-func (cas *nopCloser) Walk(ctx context.Context, wantBlocks bool) <-chan Walk {
-	return cas.impl.Walk(ctx, wantBlocks)
+func (cas *nopCloserCAS) Release(ctx context.Context, addr Addr, shred bool) error {
+	return cas.Next.Release(ctx, addr, shred)
 }
 
-func (cas *nopCloser) Stat(ctx context.Context) (Stat, error) {
-	return cas.impl.Stat(ctx)
+func (cas *nopCloserCAS) Walk(ctx context.Context, wantBlocks bool) <-chan Walk {
+	return cas.Next.Walk(ctx, wantBlocks)
 }
 
-func (cas *nopCloser) Close() {
+func (cas *nopCloserCAS) Stat(ctx context.Context) (Stat, error) {
+	return cas.Next.Stat(ctx)
+}
+
+func (cas *nopCloserCAS) Close() {
 	// no op
 }

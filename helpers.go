@@ -42,12 +42,12 @@ func EqualByteSlices(a, b []byte) bool {
 	return true
 }
 
-func CheckIntegrity(addr Addr, block []byte) error {
+func VerifyIntegrity(addr Addr, block []byte) error {
 	addr2 := Hash(block)
 	if !EqualByteSlices(addr[:], addr2[:]) {
 		return IntegrityError{
-			Addr: addr,
-			CorruptAddr: addr2,
+			Addr:         addr,
+			CorruptAddr:  addr2,
 			CorruptBlock: block,
 		}
 	}
@@ -59,8 +59,12 @@ func ReadBlock(r io.Reader) ([]byte, error) {
 	i := 0
 	for i < BlockSize {
 		n, err := r.Read(block[i:])
-		if err == io.EOF { break }
-		if err != nil { return nil, err }
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return nil, err
+		}
 		i += n
 	}
 	if i < BlockSize {
@@ -73,9 +77,13 @@ func ReadBlockAt(r io.ReaderAt, offset int64) ([]byte, error) {
 	block := make([]byte, BlockSize)
 	i := 0
 	for i < BlockSize {
-		n, err := r.ReadAt(block[i:], offset + int64(i))
-		if err == io.EOF { break }
-		if err != nil { return nil, err }
+		n, err := r.ReadAt(block[i:], offset+int64(i))
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return nil, err
+		}
 		i += n
 	}
 	if i < BlockSize {

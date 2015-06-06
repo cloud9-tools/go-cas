@@ -4,6 +4,18 @@ import (
 	"fmt"
 )
 
+// AddrParseError is returned by ParseAddr when it fails.
+type AddrParseError struct {
+	Input string
+	Cause error
+}
+
+func (err AddrParseError) Error() string {
+	return fmt.Sprintf("%q: %v", err.Input, err.Cause)
+}
+
+var _ error = AddrParseError{}
+
 // BlockNotFoundError is returned by Get if the requested CAS block was not
 // found in storage.
 type BlockNotFoundError struct {

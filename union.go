@@ -1,41 +1,101 @@
 package cas // import "github.com/chronos-tachyon/go-cas"
 
 import (
+	"errors"
+	"fmt"
+	"strings"
 	"sync"
 
 	"github.com/chronos-tachyon/go-multierror"
 	"golang.org/x/net/context"
 )
 
-// UnionOf returns a CAS implementation that wires together multiple CASes as a
-// stack, using the first CAS as the sole destination for Put and Free but
-// falling back on the others for Get.
-func UnionOf(layers ...CAS) CAS {
-	return &union{sync.RWMutex{}, layers, make(map[Addr]struct{})}
+type unionSpec struct {
+	Children []Spec
 }
 
-type union struct {
-	mutex   sync.RWMutex
-	layers  []CAS
-	deleted map[Addr]struct{}
+// The UnionOf spec wires together multiple CASes as a stack, using the first
+// CAS as the sole destination for Put/Release but falling back for Get/Walk.
+//
+// Compare to http://en.wikipedia.org/wiki/UnionFS filesystem mounts.
+func UnionOf(children ...Spec) Spec {
+	return unionSpec{children}
 }
 
-func (cas *union) Copy() *union {
+func parseUnionSpec(input string) (Spec, error) {
+	if !strings.HasPrefix(input, "union:[") {
+		return nil, errNoMatch
+	}
+	str := input[6:]
+	i := closingBracket(str)
+	if i < 0 {
+		return nil, SpecParseError{
+			Input:   input,
+			Problem: errors.New("'[' without ']'"),
+		}
+	}
+	trailing := str[i+1:]
+	if len(trailing) > 0 {
+		return nil, SpecParseError{
+			Input:   input,
+			Problem: fmt.Errorf("trailing garbage %q", trailing),
+		}
+	}
+	str = str[:i]
+	childInputs := splitOutsideBrackets(str, ',')
+	var children []Spec
+	for _, childInput := range childInputs {
+		spec, err := ParseSpec(childInput)
+		if err != nil {
+			return nil, err
+		}
+		children = append(children, spec)
+	}
+	return UnionOf(children...), nil
+}
+
+func (spec unionSpec) String() string {
+	return "union:[" + strings.Join(mapToString(spec.Children), ",") + "]"
+}
+
+func (spec unionSpec) Open(mode Mode) (CAS, error) {
+	children := make([]CAS, 0, len(spec.Children))
+	var errors []error
+	for _, childSpec := range spec.Children {
+		child, err := childSpec.Open(mode)
+		if err != nil {
+			errors = append(errors, err)
+			continue
+		}
+		children = append(children, child)
+	}
+	err := multierror.New(errors)
+	if err != nil {
+		return nil, err
+	}
+	return &unionCAS{
+		children: children,
+		deleted:  make(map[Addr]struct{}),
+	}, nil
+}
+
+type unionCAS struct {
+	mutex    sync.RWMutex
+	children []CAS
+	deleted  map[Addr]struct{}
+}
+
+func (cas *unionCAS) Spec() Spec {
 	cas.mutex.RLock()
 	defer cas.mutex.RUnlock()
-
-	dup := &union{
-		layers:  make([]CAS, len(cas.layers)),
-		deleted: make(map[Addr]struct{}, len(cas.deleted)),
+	specs := make([]Spec, len(cas.children))
+	for i, child := range cas.children {
+		specs[i] = child.Spec()
 	}
-	copy(dup.layers, cas.layers)
-	for addr, _ := range cas.deleted {
-		dup.deleted[addr] = struct{}{}
-	}
-	return dup
+	return UnionOf(specs...)
 }
 
-func (cas *union) Get(ctx context.Context, addr Addr) ([]byte, error) {
+func (cas *unionCAS) Get(ctx context.Context, addr Addr) ([]byte, error) {
 	cas.mutex.RLock()
 	defer cas.mutex.RUnlock()
 
@@ -45,8 +105,8 @@ func (cas *union) Get(ctx context.Context, addr Addr) ([]byte, error) {
 
 	var errors []error
 Loop:
-	for _, layer := range cas.layers {
-		block, err := layer.Get(ctx, addr)
+	for _, child := range cas.children {
+		block, err := child.Get(ctx, addr)
 		if err == nil {
 			return block, nil
 		}
@@ -67,9 +127,9 @@ Loop:
 	return nil, err
 }
 
-func (cas *union) Put(ctx context.Context, raw []byte) (Addr, error) {
+func (cas *unionCAS) Put(ctx context.Context, raw []byte) (Addr, error) {
 	cas.mutex.RLock()
-	top := cas.layers[0]
+	top := cas.children[0]
 	cas.mutex.RUnlock()
 
 	addr, err := top.Put(ctx, raw)
@@ -81,21 +141,36 @@ func (cas *union) Put(ctx context.Context, raw []byte) (Addr, error) {
 	return addr, err
 }
 
-func (cas *union) Release(ctx context.Context, addr Addr, shred bool) error {
+func (cas *unionCAS) Release(ctx context.Context, addr Addr, shred bool) error {
 	cas.mutex.Lock()
 	cas.deleted[addr] = struct{}{}
-	top := cas.layers[0]
+	top := cas.children[0]
 	cas.mutex.Unlock()
 
 	return top.Release(ctx, addr, shred)
 }
 
-func (cas *union) Walk(ctx context.Context, wantBlocks bool) <-chan Walk {
+func (cas *unionCAS) Snapshot() *unionCAS {
+	cas.mutex.RLock()
+	defer cas.mutex.RUnlock()
+
+	dup := &unionCAS{
+		children: make([]CAS, len(cas.children)),
+		deleted:  make(map[Addr]struct{}, len(cas.deleted)),
+	}
+	copy(dup.children, cas.children)
+	for addr, _ := range cas.deleted {
+		dup.deleted[addr] = struct{}{}
+	}
+	return dup
+}
+
+func (cas *unionCAS) Walk(ctx context.Context, wantBlocks bool) <-chan Walk {
 	send := make(chan Walk)
-	snapshot := cas.Copy()
-	recvlist := make([]<-chan Walk, 0, len(snapshot.layers))
-	for _, layer := range snapshot.layers {
-		recvlist = append(recvlist, layer.Walk(ctx, wantBlocks))
+	snapshot := cas.Snapshot()
+	recvlist := make([]<-chan Walk, 0, len(snapshot.children))
+	for _, child := range snapshot.children {
+		recvlist = append(recvlist, child.Walk(ctx, wantBlocks))
 	}
 	go func() {
 		seen := snapshot.deleted
@@ -131,22 +206,66 @@ func (cas *union) Walk(ctx context.Context, wantBlocks bool) <-chan Walk {
 	return send
 }
 
-func (cas *union) Stat(ctx context.Context) (Stat, error) {
+func (cas *unionCAS) Stat(ctx context.Context) (Stat, error) {
 	cas.mutex.RLock()
-	top := cas.layers[0]
+	top := cas.children[0]
 	cas.mutex.RUnlock()
 
 	return top.Stat(ctx)
 }
 
-func (cas *union) Close() {
+func (cas *unionCAS) Close() {
 	cas.mutex.Lock()
-	layers := cas.layers
-	cas.layers = nil
+	children := cas.children
+	cas.children = nil
 	cas.deleted = nil
 	cas.mutex.Unlock()
 
-	for _, layer := range layers {
-		layer.Close()
+	for _, child := range children {
+		child.Close()
 	}
+}
+
+func closingBracket(in string) int {
+	n := 1
+	for i := 0; i < len(in); i++ {
+		switch in[i] {
+		case '[':
+			n++
+		case ']':
+			n--
+			if n == 0 {
+				return i
+			}
+		}
+	}
+	return -1
+}
+
+func splitOutsideBrackets(in string, ch byte) []string {
+	var out []string
+	n := 0
+	i := 0
+	for j := 0; j < len(in); j++ {
+		switch in[j] {
+		case '[':
+			n++
+		case ']':
+			n--
+		case ch:
+			if n == 0 {
+				out = append(out, in[i:j])
+				i = j + 1
+			}
+		}
+	}
+	return append(out, in[i:])
+}
+
+func mapToString(in []Spec) []string {
+	out := make([]string, len(in))
+	for i, s := range in {
+		out[i] = s.String()
+	}
+	return out
 }
