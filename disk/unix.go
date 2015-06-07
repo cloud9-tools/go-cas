@@ -1,6 +1,6 @@
 // +build darwin dragonfly freebsd linux netbsd openbsd solaris
 
-package localdisk // import "github.com/chronos-tachyon/go-cas/localdisk"
+package disk // import "github.com/chronos-tachyon/go-cas/disk"
 
 import (
 	"github.com/chronos-tachyon/go-cas"

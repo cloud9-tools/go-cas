@@ -11,14 +11,14 @@ import (
 const diskSpecDefaultLimit = 1048576 // 1TiB
 
 // NewLocalDiskFunc is an internal type for use by
-// "github.com/chronos-tachyon/go-cas/localdisk".
+// "github.com/chronos-tachyon/go-cas/disk".
 type NewLocalDiskFunc func(string, int64, Mode) (CAS, error)
 
 // NewLocalDisk is an internal global variable for use by
-// "github.com/chronos-tachyon/go-cas/localdisk".
+// "github.com/chronos-tachyon/go-cas/disk".
 var NewLocalDisk NewLocalDiskFunc = func(_ string, _ int64, _ Mode) (CAS, error) {
 	return nil, errors.New(`Please add this import line:
-	import _ "github.com/chronos-tachyon/go-cas/localdisk"`)
+	import _ "github.com/chronos-tachyon/go-cas/disk"`)
 }
 
 type diskSpec struct {
@@ -30,7 +30,7 @@ type diskSpec struct {
 //
 // While you can always create this Spec, you cannot Open() by default.
 // To support local disks, add the following import for its side effects:
-//	import _ "github.com/chronos-tachyon/go-cas/localdisk"
+//	import _ "github.com/chronos-tachyon/go-cas/disk"
 func LocalDisk(dir string, limit int64) Spec {
 	return diskSpec{dir, limit}
 }

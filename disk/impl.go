@@ -1,4 +1,4 @@
-package localdisk // import "github.com/chronos-tachyon/go-cas/localdisk"
+package disk // import "github.com/chronos-tachyon/go-cas/disk"
 
 import (
 	"encoding/hex"
