@@ -17,8 +17,8 @@ type NewLocalDiskFunc func(string, int64, Mode) (CAS, error)
 // NewLocalDisk is an internal global variable for use by
 // "github.com/chronos-tachyon/go-cas/localdisk".
 var NewLocalDisk NewLocalDiskFunc = func(_ string, _ int64, _ Mode) (CAS, error) {
-	panic(errors.New(`Please add this import line:
-	import _ "github.com/chronos-tachyon/go-cas/localdisk"`))
+	return nil, errors.New(`Please add this import line:
+	import _ "github.com/chronos-tachyon/go-cas/localdisk"`)
 }
 
 type diskSpec struct {
