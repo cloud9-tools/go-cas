@@ -10,7 +10,11 @@ var errNoMatch = errors.New("no match")
 // Spec names a CAS backend without connecting to it.
 // It is analogous to a filename or a URL.
 type Spec interface {
+	// Open returns an instance of the requested CAS implementation, or an
+	// error if one couldn't be created.
 	Open(Mode) (CAS, error)
+
+	// String returns the canonical string form of this Spec.
 	String() string
 }
 

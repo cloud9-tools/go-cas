@@ -16,8 +16,8 @@ func (err AddrParseError) Error() string {
 
 var _ error = AddrParseError{}
 
-// BlockNotFoundError is returned by Get if the requested CAS block was not
-// found in storage.
+// BlockNotFoundError is returned by read operations if the requested CAS block
+// was not found in storage.
 type BlockNotFoundError struct {
 	Addr Addr
 }
@@ -28,7 +28,8 @@ func (err BlockNotFoundError) Error() string {
 
 var _ error = (*BlockNotFoundError)(nil)
 
-// NoSpaceError is returned by Put if there is no room left for new CAS blocks.
+// NoSpaceError is returned by write operations if there is no room left for
+// a new CAS block to be written.
 type NoSpaceError struct {
 	Name string
 }
@@ -39,7 +40,12 @@ func (err NoSpaceError) Error() string {
 
 var _ error = (*NoSpaceError)(nil)
 
-// IntegrityError is returned by Get if the data became corrupted in storage.
+// IntegrityError is returned by read operations in lieu of data if the CAS
+// determines that the data became corrupted in storage, i.e. the block's
+// contents no longer match its hash.
+//
+// CAS backends do not directly provide data recovery.  Use Reed-Solomon or
+// some other ECC to rebuild damaged data.
 type IntegrityError struct {
 	Addr         Addr
 	CorruptAddr  Addr

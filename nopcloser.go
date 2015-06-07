@@ -4,6 +4,8 @@ import (
 	"golang.org/x/net/context"
 )
 
+// NopCloser returns a new CAS that ignores calls to Close() but forwards all
+// other calls to next.
 func NopCloser(next CAS) CAS {
 	return &nopCloserCAS{next}
 }
