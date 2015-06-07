@@ -26,9 +26,9 @@ type diskSpec struct {
 	Limit int64
 }
 
-// LocalDisk returns a spec for a CAS on local disk.
+// LocalDisk returns a Spec for a CAS on local disk.
 //
-// While you can always create a Spec, you cannot Open() by default.
+// While you can always create this Spec, you cannot Open() by default.
 // To support local disks, add the following import for its side effects:
 //	import _ "github.com/chronos-tachyon/go-cas/localdisk"
 func LocalDisk(dir string, limit int64) Spec {

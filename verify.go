@@ -12,6 +12,9 @@ var verifySpecRE = regexp.MustCompile(`^verify:\[(.*)\]$`)
 
 type verifySpec struct{ Next Spec }
 
+// Verify returns a Spec for a CAS that will delegate to next, but that will
+// also scan each block during read operations and report any hash mismatches
+// as errors.
 func Verify(next Spec) Spec {
 	return verifySpec{next}
 }

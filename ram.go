@@ -27,6 +27,10 @@ type ramCAS struct {
 	Mode     Mode
 }
 
+// InProcessRAM returns a Spec for a non-persistent CAS in Go's heap.
+//
+// Distinct names map to distinct CAS backends, with the exception that the
+// empty string is mapped to the CAS backend with name "default".
 func InProcessRAM(name string, limit int64) Spec {
 	if name == "" {
 		name = ramSpecDefaultInstance

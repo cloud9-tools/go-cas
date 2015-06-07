@@ -14,8 +14,9 @@ type unionSpec struct {
 	Children []Spec
 }
 
-// The UnionOf spec wires together multiple CASes as a stack, using the first
-// CAS as the sole destination for Put/Release but falling back for Get/Walk.
+// UnionOf returns a Spec for a CAS that wires together multiple child CASes
+// into a stack.  The first CAS will be the sole destination for write
+// operations, but read operations will be tried serially from first to last.
 //
 // Compare to http://en.wikipedia.org/wiki/UnionFS filesystem mounts.
 func UnionOf(children ...Spec) Spec {
