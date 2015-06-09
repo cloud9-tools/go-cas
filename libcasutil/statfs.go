@@ -10,6 +10,7 @@ import (
 )
 
 const StatfsHelpText = `Usage: casutil statfs
+Usage: casutil stat
 	Displays information about the size and health of a CAS backend.
 `
 

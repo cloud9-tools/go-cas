@@ -12,7 +12,8 @@ import (
 	"golang.org/x/net/context"
 )
 
-const ScriptHelpText = `Usage: casutil script <filename>...
+const ScriptHelpText = `Usage: casutil script [-x] <filename>...
+Usage: ... | casutil script [-x] -
 	Executes commands from the named file.
 `
 

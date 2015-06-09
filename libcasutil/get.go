@@ -13,6 +13,7 @@ import (
 )
 
 const GetHelpText = `Usage: casutil get [-z] <addr>...
+Usage: casutil cat [-z] <addr>...
 	Prints the contents of the named CAS block to stdout.
 	If multiple blocks are given, their contents are concatenated.
 

@@ -10,7 +10,7 @@ import (
 	"golang.org/x/net/context"
 )
 
-const ClearHelpText = `Usage: casutil clear
+const ClearHelpText = `Usage: casutil clear [--shred]
 	Delete all CAS blocks.
 `
 
