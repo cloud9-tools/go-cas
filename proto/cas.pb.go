@@ -104,7 +104,8 @@ func (m *StatReply) String() string { return proto1.CompactTextString(m) }
 func (*StatReply) ProtoMessage()    {}
 
 type WalkRequest struct {
-	WantBlocks bool `protobuf:"varint,1,opt,name=want_blocks" json:"want_blocks,omitempty"`
+	WantBlocks bool   `protobuf:"varint,1,opt,name=want_blocks" json:"want_blocks,omitempty"`
+	Regexp     string `protobuf:"bytes,2,opt,name=regexp" json:"regexp,omitempty"`
 }
 
 func (m *WalkRequest) Reset()         { *m = WalkRequest{} }

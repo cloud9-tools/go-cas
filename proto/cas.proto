@@ -49,6 +49,7 @@ message StatReply {
 
 message WalkRequest {
   bool want_blocks = 1;
+  string regexp = 2;
 }
 
 message WalkReply {
