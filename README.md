@@ -3,10 +3,10 @@ A Content-Addressable Storage layer for Go.
 
 [![godoc](https://chronos-tachyon.net/img/godoc-badge.svg)](https://godoc.org/github.com/chronos-tachyon/go-cas)
 
-This is an *EARLY BETA*.  It mostly kinda works, but there are no tests, there
-is no distributed storage, there's no proper locality caching, and there's no
-Reed-Solomon.  All of these are pretty much mandatory before I'd trust it with
-my own data, much less yours.
+This is an *EARLY BETA*.  It mostly kinda works, but there are few tests,
+there is no distributed storage, there's no proper locality caching, and
+there's no Reed-Solomon.  All of these are pretty much mandatory before I'd
+trust it with my own data, much less yours.
 
 Not familiar with the [CAS][wiki] paradigm?  The basic idea is "let's store
 blobs, but instead of generating sequential IDs like SQL, let's hash the data

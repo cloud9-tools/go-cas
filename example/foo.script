@@ -1,0 +1,8 @@
+# This is a comment.
+put <<<"Hello, world!"
+put <<<"Hello, nurse!"
+put <<<"Goodbye, world!"
+ls
+statfs
+grep world
+grep nurse
