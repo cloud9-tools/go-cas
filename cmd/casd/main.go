@@ -80,7 +80,9 @@ func (s *Server) Release(ctx context.Context, in *proto.ReleaseRequest) (*proto.
 	} else {
 		deleted, err = s.UnlinkBlock(addr)
 	}
-	if err != nil { return nil, err }
+	if err != nil {
+		return nil, err
+	}
 	return &proto.ReleaseReply{Deleted: deleted}, nil
 }
 
@@ -308,7 +310,9 @@ func (s *Server) WriteBlock(addr *cas.Addr, block []byte) (bool, error) {
 	if err := s.ModifyMetadata(func(m *Metadata) {
 		used = m.Used
 		hasSpace = m.Used < s.Limit
-		if hasSpace { m.Used++ }
+		if hasSpace {
+			m.Used++
+		}
 	}); err != nil {
 		return false, err
 	}

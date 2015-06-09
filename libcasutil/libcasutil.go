@@ -28,6 +28,7 @@ type Dispatch struct {
 	Help     string
 	Run      RunFunc
 	AddFlags AddFlagsFunc
+	Hidden   bool
 }
 
 type RunFunc func(*Dispatcher, context.Context, []string, interface{}) int
@@ -48,9 +49,12 @@ func NewDispatcher(help string) *Dispatcher {
 	d.AddCommand("rm", RmHelpText, RmCmd, RmAddFlags)
 	d.AddCommand("ls", LsHelpText, LsCmd, LsAddFlags)
 	d.AddCommand("grep", GrepHelpText, GrepCmd, GrepAddFlags)
+	d.AddCommand("clear", ClearHelpText, ClearCmd, ClearAddFlags)
 	d.AddCommand("statfs", StatfsHelpText, StatfsCmd, StatfsAddFlags)
 	d.AddCommand("script", ScriptHelpText, ScriptCmd, ScriptAddFlags)
 	d.AddCommand("help", HelpHelpText, HelpCmd, HelpAddFlags)
+	d.AddAlias("cat", "get")
+	d.AddAlias("stat", "statfs")
 	return d
 }
 
@@ -89,11 +93,27 @@ func (d *Dispatcher) makeFlagSet(name, help string, flagfn AddFlagsFunc, ok bool
 }
 
 func (d *Dispatcher) AddCommand(name, help string, runfn RunFunc, flagfn AddFlagsFunc) {
-	d.Dispatches = append(d.Dispatches, Dispatch{name, help, runfn, flagfn})
+	d.Dispatches = append(d.Dispatches, Dispatch{name, help, runfn, flagfn, false})
 }
 
 func (d *Dispatcher) AddTopic(name, help string) {
-	d.Dispatches = append(d.Dispatches, Dispatch{name, help, nil, nil})
+	d.Dispatches = append(d.Dispatches, Dispatch{name, help, nil, nil, false})
+}
+
+func (d *Dispatcher) AddAlias(alias, name string) {
+	var item Dispatch
+	var found bool
+	for _, dispatch := range d.Dispatches {
+		if dispatch.Name == name {
+			item = dispatch
+			found = true
+			break
+		}
+	}
+	if !found {
+		panic(fmt.Errorf("unknown command or topic %q, cannot create alias %q", name, alias))
+	}
+	d.Dispatches = append(d.Dispatches, Dispatch{alias, "", item.Run, item.AddFlags, true})
 }
 
 func (d *Dispatcher) Dispatch(args []string) int {

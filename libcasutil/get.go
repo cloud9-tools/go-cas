@@ -21,7 +21,7 @@ const GetHelpText = `Usage: casutil get [-z] <addr>...
 `
 
 type GetFlags struct {
-	Backend     string
+	Backend  string
 	TrimZero bool
 }
 
