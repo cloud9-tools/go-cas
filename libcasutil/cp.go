@@ -14,35 +14,53 @@ const CpHelpText = `Usage: casutil cp <addr>...
 `
 
 type CpFlags struct {
-	Source      string
-	Destination string
+	Backend string
+	Source  string
 }
 
 func CpAddFlags(fs *flag.FlagSet) interface{} {
 	f := &CpFlags{}
+	fs.StringVar(&f.Backend, "backend", "", "CAS server to copy to")
+	fs.StringVar(&f.Backend, "B", "", "alias for --backend")
 	fs.StringVar(&f.Source, "source", "", "CAS server to copy from")
-	fs.StringVar(&f.Source, "s", "", "alias for --source")
-	fs.StringVar(&f.Destination, "destination", "", "CAS server to copy to")
-	fs.StringVar(&f.Destination, "d", "", "alias for --destination")
+	fs.StringVar(&f.Source, "S", "", "alias for --source")
 	return f
 }
 
 func CpCmd(d *Dispatcher, ctx context.Context, args []string, fval interface{}) int {
 	f := fval.(*CpFlags)
 
-	srcClient, err := cas.DialClient(f.Source)
-	if err != nil {
-		fmt.Fprintf(d.Err, "error: failed to connect to source CAS: %q: %v\n", f.Source, err)
-		return 1
+	backend := f.Backend
+	if backend == "" {
+		backend = d.Backend
 	}
-	defer srcClient.Close()
+	if backend == "" {
+		fmt.Fprintf(d.Err, "error: must specify --backend\n")
+		return 2
+	}
 
-	dstClient, err := cas.DialClient(f.Destination)
+	source := f.Source
+	if source == "" {
+		source = d.Source
+	}
+	if source == "" {
+		fmt.Fprintf(d.Err, "error: must specify --source\n")
+		return 2
+	}
+
+	dstClient, err := cas.DialClient(backend)
 	if err != nil {
-		fmt.Fprintf(d.Err, "error: failed to connect to dest CAS: %q: %v\n", f.Destination, err)
+		fmt.Fprintf(d.Err, "error: failed to connect to dst CAS: %q: %v\n", backend, err)
 		return 1
 	}
 	defer dstClient.Close()
+
+	srcClient, err := cas.DialClient(source)
+	if err != nil {
+		fmt.Fprintf(d.Err, "error: failed to connect to src CAS: %q: %v\n", source, err)
+		return 1
+	}
+	defer srcClient.Close()
 
 	for _, addr := range args {
 		reply, err := srcClient.Get(ctx, &proto.GetRequest{Addr: addr})
@@ -51,13 +69,13 @@ func CpCmd(d *Dispatcher, ctx context.Context, args []string, fval interface{}) 
 			return 1
 		}
 
-		_, err = dstClient.Put(ctx, &proto.PutRequest{Addr: addr, Block: reply.Block})
+		reply2, err := dstClient.Put(ctx, &proto.PutRequest{Addr: addr, Block: reply.Block})
 		if err != nil {
 			fmt.Fprintf(d.Err, "error: failed to put CAS block: %v\n", err)
 			return 1
 		}
 
-		fmt.Fprintln(d.Out, addr)
+		fmt.Fprintf(d.Out, "%s inserted=%t\n", addr, reply2.Inserted)
 	}
 	return 0
 }

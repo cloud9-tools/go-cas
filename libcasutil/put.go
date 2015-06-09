@@ -20,21 +20,31 @@ Usage: ... | casutil put
 `
 
 type PutFlags struct {
-	Spec string
+	Backend string
 }
 
 func PutAddFlags(fs *flag.FlagSet) interface{} {
 	f := &PutFlags{}
-	fs.StringVar(&f.Spec, "spec", "", "CAS server to connect to")
+	fs.StringVar(&f.Backend, "backend", "", "CAS backend to connect to")
+	fs.StringVar(&f.Backend, "B", "", "alias for --backend")
 	return f
 }
 
 func PutCmd(d *Dispatcher, ctx context.Context, args []string, fval interface{}) int {
 	f := fval.(*PutFlags)
 
-	client, err := cas.DialClient(f.Spec)
+	backend := f.Backend
+	if backend == "" {
+		backend = d.Backend
+	}
+	if backend == "" {
+		fmt.Fprintf(d.Err, "error: must specify --backend\n")
+		return 2
+	}
+
+	client, err := cas.DialClient(backend)
 	if err != nil {
-		fmt.Fprintf(d.Err, "error: failed to open CAS %q: %v\n", f.Spec, err)
+		fmt.Fprintf(d.Err, "error: failed to open CAS %q: %v\n", backend, err)
 		return 1
 	}
 
@@ -65,7 +75,7 @@ func PutCmd(d *Dispatcher, ctx context.Context, args []string, fval interface{})
 			fmt.Fprintf(d.Err, "error: failed to put CAS block: %v\n", err)
 			return 1
 		}
-		fmt.Fprintln(d.Out, reply.Addr)
+		fmt.Fprintf(d.Out, "%s inserted=%t\n", reply.Addr, reply.Inserted)
 	}
 
 	return 0

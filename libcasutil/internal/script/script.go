@@ -9,13 +9,42 @@ import (
 )
 
 type TokenType uint8
+type LexError uint8
 
+//go:generate stringer -type=TokenType
 const (
 	ErrorToken TokenType = iota
 	WordToken
 	CommentToken
 	NewlineToken
 )
+
+func (tt TokenType) GoString() string {
+	return tt.String()
+}
+
+//go:generate stringer -type=LexError
+const (
+	ErrUnterminatedSQS LexError = iota
+	ErrUnterminatedDQS
+	ErrUnterminatedBS
+)
+
+func (err LexError) GoString() string {
+	return err.String()
+}
+
+func (err LexError) Error() string {
+	switch err {
+	case ErrUnterminatedSQS:
+		return "unterminated single-quoted string"
+	case ErrUnterminatedDQS:
+		return "unterminated double-quoted string"
+	case ErrUnterminatedBS:
+		return "unterminated backslash"
+	}
+	panic(nil)
+}
 
 type Token struct {
 	Type  TokenType
@@ -57,6 +86,17 @@ const (
 	inWhitespace
 	inNewline
 )
+
+var escapes = map[rune]string{
+	'a': "\a",   // 07h BEL
+	'b': "\b",   // 08h BS
+	't': "\t",   // 09h TAB
+	'n': "\n",   // 0Ah LF
+	'v': "\v",   // 0Bh VT
+	'f': "\f",   // 0Ch FF
+	'r': "\r",   // 0Dh CR
+	'e': "\x1B", // 1Bh ESC
+}
 
 func Lex(r io.Reader) (<-chan Token, chan<- struct{}) {
 	reader := newRuneScanner(r)
@@ -118,13 +158,23 @@ func Lex(r io.Reader) (<-chan Token, chan<- struct{}) {
 					partial = ""
 				}
 			case inSQ:
-				if r == '\'' {
+				if eof {
+					ch <- Token{WordToken, partial, nil}
+					ch <- Token{ErrorToken, "", ErrUnterminatedSQS}
+					close(ch)
+					return
+				} else if r == '\'' {
 					state = normal
 				} else {
 					partial += string(tmp[0:n])
 				}
 			case inDQ:
-				if r == '"' {
+				if eof {
+					ch <- Token{WordToken, partial, nil}
+					ch <- Token{ErrorToken, "", ErrUnterminatedDQS}
+					close(ch)
+					return
+				} else if r == '"' {
 					state = normal
 				} else if r == '\\' {
 					state = inDQBS
@@ -132,23 +182,17 @@ func Lex(r io.Reader) (<-chan Token, chan<- struct{}) {
 					partial += string(tmp[0:n])
 				}
 			case inDQBS:
+				if eof {
+					partial += "\\"
+					ch <- Token{WordToken, partial, nil}
+					ch <- Token{ErrorToken, "", ErrUnterminatedDQS}
+					close(ch)
+					return
+				}
 				switch r {
-				case 'a':
-					partial += "\a"
-				case 'b':
-					partial += "\b"
-				case 't':
-					partial += "\t"
-				case 'n':
-					partial += "\n"
-				case 'v':
-					partial += "\v"
-				case 'f':
-					partial += "\f"
-				case 'r':
-					partial += "\r"
-				case 'e':
-					partial += "\x1B"
+				case 'a', 'b', 't', 'n', 'v', 'f', 'r', 'e':
+					partial += escapes[r]
+					state = inDQ
 				case '0', '1':
 					maxDigits = 3
 					state = inDQOct
@@ -171,15 +215,7 @@ func Lex(r io.Reader) (<-chan Token, chan<- struct{}) {
 					state = inDQ
 				}
 			case inDQOct:
-				var end bool
-				if isOctDigit(r) {
-					partial2 += string(tmp[0:n])
-					end = len(partial2) == maxDigits
-				} else {
-					reader.UnreadRune()
-					end = true
-				}
-				if end {
+				processOct := func() {
 					x, _ := strconv.ParseUint(partial2, 8, 32)
 					r = rune(x)
 					n = utf8.EncodeRune(tmp[:], r)
@@ -188,16 +224,23 @@ func Lex(r io.Reader) (<-chan Token, chan<- struct{}) {
 					maxDigits = 0
 					state = inDQ
 				}
-			case inDQHex:
-				var end bool
-				if isHexDigit(r) {
+				if eof {
+					processOct()
+					ch <- Token{WordToken, partial, nil}
+					ch <- Token{ErrorToken, "", ErrUnterminatedDQS}
+					close(ch)
+					return
+				} else if isOctDigit(r) {
 					partial2 += string(tmp[0:n])
-					end = len(partial2) == maxDigits
+					if len(partial2) == maxDigits {
+						processOct()
+					}
 				} else {
 					reader.UnreadRune()
-					end = true
+					processOct()
 				}
-				if end {
+			case inDQHex:
+				processHex := func() {
 					x, _ := strconv.ParseUint(partial2, 16, 32)
 					r = rune(x)
 					n = utf8.EncodeRune(tmp[:], r)
@@ -206,7 +249,28 @@ func Lex(r io.Reader) (<-chan Token, chan<- struct{}) {
 					maxDigits = 0
 					state = inDQ
 				}
+				if eof {
+					processHex()
+					ch <- Token{WordToken, partial, nil}
+					ch <- Token{ErrorToken, "", ErrUnterminatedDQS}
+					close(ch)
+					return
+				} else if isHexDigit(r) {
+					partial2 += string(tmp[0:n])
+					if len(partial2) == maxDigits {
+						processHex()
+					}
+				} else {
+					reader.UnreadRune()
+					processHex()
+				}
 			case inBS:
+				if eof {
+					ch <- Token{WordToken, partial, nil}
+					ch <- Token{ErrorToken, "", ErrUnterminatedBS}
+					close(ch)
+					return
+				}
 				partial += string(tmp[0:n])
 				state = normal
 			case inComment:

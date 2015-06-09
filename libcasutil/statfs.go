@@ -14,26 +14,36 @@ const StatfsHelpText = `Usage: casutil statfs
 `
 
 type StatfsFlags struct {
-	Spec string
+	Backend string
 }
 
 func StatfsAddFlags(fs *flag.FlagSet) interface{} {
 	f := &StatfsFlags{}
-	fs.StringVar(&f.Spec, "spec", "", "CAS server to connect to")
+	fs.StringVar(&f.Backend, "backend", "", "CAS backend to connect to")
+	fs.StringVar(&f.Backend, "B", "", "alias for --backend")
 	return f
 }
 
 func StatfsCmd(d *Dispatcher, ctx context.Context, args []string, fval interface{}) int {
 	f := fval.(*StatfsFlags)
 
+	backend := f.Backend
+	if backend == "" {
+		backend = d.Backend
+	}
+	if backend == "" {
+		fmt.Fprintf(d.Err, "error: must specify --backend\n")
+		return 2
+	}
+
 	if len(args) != 0 {
 		fmt.Fprintf(d.Err, "error: statfs takes exactly zero arguments!  got %q\n", args)
 		return 2
 	}
 
-	client, err := cas.DialClient(f.Spec)
+	client, err := cas.DialClient(backend)
 	if err != nil {
-		fmt.Fprintf(d.Err, "error: failed to open CAS %q: %v\n", f.Spec, err)
+		fmt.Fprintf(d.Err, "error: failed to open CAS %q: %v\n", backend, err)
 		return 1
 	}
 
@@ -43,7 +53,6 @@ func StatfsCmd(d *Dispatcher, ctx context.Context, args []string, fval interface
 	}
 
 	total := reply.BlocksFree + reply.BlocksUsed
-	fmt.Fprintf(d.Out, "spec=%s\n", f.Spec)
 	fmt.Fprintf(d.Out, "blocks_free=%d\n", reply.BlocksFree)
 	fmt.Fprintf(d.Out, "blocks_used=%d\n", reply.BlocksUsed)
 	fmt.Fprintf(d.Out, "blocks_total=%d\n", total)

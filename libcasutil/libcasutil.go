@@ -19,6 +19,8 @@ type Dispatcher struct {
 	Out         io.Writer
 	Err         io.Writer
 	Timeout     time.Duration
+	Backend     string
+	Source      string
 }
 
 type Dispatch struct {

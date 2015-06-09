@@ -15,13 +15,14 @@ const RmHelpText = `Usage: casutil rm [--shred] <addr>...
 `
 
 type RmFlags struct {
-	Spec  string
+	Backend string
 	Shred bool
 }
 
 func RmAddFlags(fs *flag.FlagSet) interface{} {
 	f := &RmFlags{}
-	fs.StringVar(&f.Spec, "spec", "", "CAS server to connect to")
+	fs.StringVar(&f.Backend, "backend", "", "CAS backend to connect to")
+	fs.StringVar(&f.Backend, "B", "", "alias for --backend")
 	fs.BoolVar(&f.Shred, "shred", false, "attempt secure destruction?")
 	return f
 }
@@ -29,16 +30,25 @@ func RmAddFlags(fs *flag.FlagSet) interface{} {
 func RmCmd(d *Dispatcher, ctx context.Context, args []string, fval interface{}) int {
 	f := fval.(*RmFlags)
 
-	client, err := cas.DialClient(f.Spec)
+	backend := f.Backend
+	if backend == "" {
+		backend = d.Backend
+	}
+	if backend == "" {
+		fmt.Fprintf(d.Err, "error: must specify --backend\n")
+		return 2
+	}
+
+	client, err := cas.DialClient(backend)
 	if err != nil {
-		fmt.Fprintf(d.Err, "error: failed to open CAS %q: %v\n", f.Spec, err)
+		fmt.Fprintf(d.Err, "error: failed to open CAS %q: %v\n", backend, err)
 		return 1
 	}
 	defer client.Close()
 
 	ret := 0
 	for _, addr := range args {
-		_, err = client.Release(ctx, &proto.ReleaseRequest{
+		reply, err := client.Release(ctx, &proto.ReleaseRequest{
 			Addr:  addr,
 			Shred: f.Shred,
 		})
@@ -46,6 +56,7 @@ func RmCmd(d *Dispatcher, ctx context.Context, args []string, fval interface{}) 
 			fmt.Fprintf(d.Err, "error: failed to release CAS block: %q: %v\n", addr, err)
 			ret = 1
 		}
+		fmt.Fprintf(d.Out, "%s deleted=%t\n", addr, reply.Deleted)
 	}
 	return ret
 }

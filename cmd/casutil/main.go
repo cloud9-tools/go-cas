@@ -19,10 +19,24 @@ const helpText = `Usage of casutil:
 func main() {
 	log.SetPrefix("casutil: ")
 	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
-	timeoutFlag := flag.Duration("timeout", defaultTimeout, "timeout for CAS operations")
+
+	var backendFlag, sourceFlag string
+	var timeoutFlag time.Duration
+	flag.StringVar(&backendFlag, "backend", "", "default CAS backend for commands to operate on")
+	flag.StringVar(&backendFlag, "B", "", "shorthand for --backend")
+	flag.StringVar(&sourceFlag, "source", "", "default CAS backend for the 'cp' command to read from")
+	flag.StringVar(&sourceFlag, "S", "", "shorthand for --source")
+	flag.DurationVar(&timeoutFlag, "timeout", defaultTimeout, "timeout for CAS operations")
+	flag.DurationVar(&timeoutFlag, "t", defaultTimeout, "shorthand for --timeout")
 	flag.Parse()
 
+	if sourceFlag == "" {
+		sourceFlag = backendFlag
+	}
+
 	d := libcasutil.NewDispatcher(helpText)
-	d.Timeout = *timeoutFlag
+	d.Backend = backendFlag
+	d.Source = sourceFlag
+	d.Timeout = timeoutFlag
 	os.Exit(d.Dispatch(flag.Args()))
 }

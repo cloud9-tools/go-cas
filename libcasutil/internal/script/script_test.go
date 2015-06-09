@@ -5,6 +5,9 @@ import (
 	"testing"
 )
 
+const CRLF = "\r\n"
+const LF = "\n"
+
 func TestLex(t *testing.T) {
 	type testrow struct {
 		Input  string
@@ -12,123 +15,178 @@ func TestLex(t *testing.T) {
 	}
 
 	for i, row := range []testrow{
+		// Barewords {{{
 		testrow{
-			Input: "",
+			Input: ``,
 			Output: []Token{
-				Token{NewlineToken, "\n", nil},
+				Token{NewlineToken, LF, nil},
 			},
 		},
+		testrow{
+			Input: `foobar`,
+			Output: []Token{
+				Token{WordToken, `foobar`, nil},
+				Token{NewlineToken, LF, nil},
+			},
+		},
+		testrow{
+			Input: `foobar` + LF,
+			Output: []Token{
+				Token{WordToken, `foobar`, nil},
+				Token{NewlineToken, LF, nil},
+			},
+		},
+		testrow{
+			Input: `foobar` + CRLF + CRLF,
+			Output: []Token{
+				Token{WordToken, `foobar`, nil},
+				Token{NewlineToken, LF, nil},
+			},
+		},
+		testrow{
+			Input: `foo\bar`,
+			Output: []Token{
+				Token{WordToken, `foobar`, nil},
+				Token{NewlineToken, LF, nil},
+			},
+		},
+		testrow{
+			Input: `foobar\` + LF,
+			Output: []Token{
+				Token{WordToken, `foobar` + LF, nil},
+				Token{NewlineToken, LF, nil},
+			},
+		},
+		testrow{
+			Input: `foo\'bar\'`,
+			Output: []Token{
+				Token{WordToken, `foo'bar'`, nil},
+				Token{NewlineToken, LF, nil},
+			},
+		},
+		testrow{
+			Input: `foo\"bar\"`,
+			Output: []Token{
+				Token{WordToken, `foo"bar"`, nil},
+				Token{NewlineToken, LF, nil},
+			},
+		},
+		testrow{
+			Input: `foo\#bar`,
+			Output: []Token{
+				Token{WordToken, `foo#bar`, nil},
+				Token{NewlineToken, LF, nil},
+			},
+		},
+		// }}}
 
+		// Single-quoted strings {{{
 		testrow{
-			Input: "foobar",
+			Input: `'foobar'`,
 			Output: []Token{
-				Token{WordToken, "foobar", nil},
-				Token{NewlineToken, "\n", nil},
+				Token{WordToken, `foobar`, nil},
+				Token{NewlineToken, LF, nil},
 			},
 		},
 		testrow{
-			Input: "foobar\n",
+			Input: `'foobar'` + CRLF,
 			Output: []Token{
-				Token{WordToken, "foobar", nil},
-				Token{NewlineToken, "\n", nil},
+				Token{WordToken, `foobar`, nil},
+				Token{NewlineToken, LF, nil},
 			},
 		},
 		testrow{
-			Input: "foobar\r\n\r\n",
+			Input: `'foobar` + CRLF + `'` + CRLF,
 			Output: []Token{
-				Token{WordToken, "foobar", nil},
-				Token{NewlineToken, "\n", nil},
+				Token{WordToken, `foobar` + CRLF, nil},
+				Token{NewlineToken, LF, nil},
 			},
 		},
+		testrow{
+			Input: `foo'bar'`,
+			Output: []Token{
+				Token{WordToken, `foobar`, nil},
+				Token{NewlineToken, LF, nil},
+			},
+		},
+		testrow{
+			Input: `'foo\xbar'`,
+			Output: []Token{
+				Token{WordToken, `foo\xbar`, nil},
+				Token{NewlineToken, LF, nil},
+			},
+		},
+		testrow{
+			Input: `'foo\'bar`,
+			Output: []Token{
+				Token{WordToken, `foo\bar`, nil},
+				Token{NewlineToken, LF, nil},
+			},
+		},
+		// }}}
 
+		// Double-quoted strings {{{
 		testrow{
-			Input: "'foobar\r\n'\r\n",
+			Input: `"foobar"`,
 			Output: []Token{
-				Token{WordToken, "foobar\r\n", nil},
-				Token{NewlineToken, "\n", nil},
+				Token{WordToken, `foobar`, nil},
+				Token{NewlineToken, LF, nil},
 			},
 		},
 		testrow{
-			Input: "foo'bar'\n",
+			Input: `foo"bar"`,
 			Output: []Token{
-				Token{WordToken, "foobar", nil},
-				Token{NewlineToken, "\n", nil},
+				Token{WordToken, `foobar`, nil},
+				Token{NewlineToken, LF, nil},
 			},
 		},
 		testrow{
-			Input: "foo'b\\ar'\n",
+			Input: `"foo\"bar"`,
 			Output: []Token{
-				Token{WordToken, "foob\\ar", nil},
-				Token{NewlineToken, "\n", nil},
+				Token{WordToken, `foo"bar`, nil},
+				Token{NewlineToken, LF, nil},
 			},
 		},
 		testrow{
-			Input: "foo'b\\\\ar'\n",
+			Input: `"foo\\bar"`,
 			Output: []Token{
-				Token{WordToken, "foob\\\\ar", nil},
-				Token{NewlineToken, "\n", nil},
+				Token{WordToken, `foo\bar`, nil},
+				Token{NewlineToken, LF, nil},
 			},
 		},
 		testrow{
-			Input: "foo'bar\\'\n",
+			Input: `"foo\nbar"`,
 			Output: []Token{
-				Token{WordToken, "foobar\\", nil},
-				Token{NewlineToken, "\n", nil},
+				Token{WordToken, `foo` + LF + `bar`, nil},
+				Token{NewlineToken, LF, nil},
 			},
 		},
+		// }}}
 
+		// Comments {{{
 		testrow{
-			Input: "foo\"bar\"\n",
+			Input: `#bar`,
 			Output: []Token{
-				Token{WordToken, "foobar", nil},
-				Token{NewlineToken, "\n", nil},
-			},
-		},
-
-		testrow{
-			Input: "#bar",
-			Output: []Token{
-				Token{CommentToken, "bar", nil},
-				Token{NewlineToken, "\n", nil},
+				Token{CommentToken, `bar`, nil},
+				Token{NewlineToken, LF, nil},
 			},
 		},
 		testrow{
-			Input: "#bar\n",
+			Input: `#bar` + LF,
 			Output: []Token{
-				Token{CommentToken, "bar", nil},
-				Token{NewlineToken, "\n", nil},
+				Token{CommentToken, `bar`, nil},
+				Token{NewlineToken, LF, nil},
 			},
 		},
 		testrow{
-			Input: "foo#bar",
+			Input: `foo#bar`,
 			Output: []Token{
-				Token{WordToken, "foo", nil},
-				Token{CommentToken, "bar", nil},
-				Token{NewlineToken, "\n", nil},
+				Token{WordToken, `foo`, nil},
+				Token{CommentToken, `bar`, nil},
+				Token{NewlineToken, LF, nil},
 			},
 		},
-
-		testrow{
-			Input: "foobar\\\n",
-			Output: []Token{
-				Token{WordToken, "foobar\n", nil},
-				Token{NewlineToken, "\n", nil},
-			},
-		},
-		testrow{
-			Input: "foob\\ar\n",
-			Output: []Token{
-				Token{WordToken, "foobar", nil},
-				Token{NewlineToken, "\n", nil},
-			},
-		},
-		testrow{
-			Input: "foo\\#bar",
-			Output: []Token{
-				Token{WordToken, "foo#bar", nil},
-				Token{NewlineToken, "\n", nil},
-			},
-		},
+		// }}}
 	} {
 		ch, _ := Lex(strings.NewReader(row.Input))
 		tokens := consume(ch)

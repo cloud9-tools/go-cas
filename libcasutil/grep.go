@@ -19,17 +19,27 @@ const GrepHelpText = `Usage: casutil grep <regexp>
 `
 
 type GrepFlags struct {
-	Spec string
+	Backend string
 }
 
 func GrepAddFlags(fs *flag.FlagSet) interface{} {
 	f := &GrepFlags{}
-	fs.StringVar(&f.Spec, "spec", "", "CAS server to connect to")
+	fs.StringVar(&f.Backend, "backend", "", "CAS backend to connect to")
+	fs.StringVar(&f.Backend, "B", "", "alias for --backend")
 	return f
 }
 
 func GrepCmd(d *Dispatcher, ctx context.Context, args []string, fval interface{}) int {
 	f := fval.(*GrepFlags)
+
+	backend := f.Backend
+	if backend == "" {
+		backend = d.Backend
+	}
+	if backend == "" {
+		fmt.Fprintf(d.Err, "error: must specify --backend\n")
+		return 2
+	}
 
 	if len(args) != 1 {
 		fmt.Fprintf(d.Err, "error: grep takes exactly one argument!  got %q\n", args)
@@ -42,9 +52,9 @@ func GrepCmd(d *Dispatcher, ctx context.Context, args []string, fval interface{}
 		return 2
 	}
 
-	client, err := cas.DialClient(f.Spec)
+	client, err := cas.DialClient(backend)
 	if err != nil {
-		fmt.Fprintf(d.Err, "error: failed to open CAS %q: %v\n", f.Spec, err)
+		fmt.Fprintf(d.Err, "error: failed to open CAS %q: %v\n", backend, err)
 		return 1
 	}
 	defer client.Close()
@@ -67,7 +77,7 @@ func GrepCmd(d *Dispatcher, ctx context.Context, args []string, fval interface{}
 			return 1
 		}
 		if re.Match(item.Block) {
-			fmt.Fprintln(d.Out, item.Addr)
+			fmt.Fprintf(d.Out, "%s\n", item.Addr)
 		}
 	}
 	return 0

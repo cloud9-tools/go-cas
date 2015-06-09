@@ -21,13 +21,14 @@ const GetHelpText = `Usage: casutil get [-z] <addr>...
 `
 
 type GetFlags struct {
-	Spec     string
+	Backend     string
 	TrimZero bool
 }
 
 func GetAddFlags(fs *flag.FlagSet) interface{} {
 	f := &GetFlags{}
-	fs.StringVar(&f.Spec, "spec", "", "CAS server to connect to")
+	fs.StringVar(&f.Backend, "backend", "", "CAS backend to connect to")
+	fs.StringVar(&f.Backend, "B", "", "alias for --backend")
 	fs.BoolVar(&f.TrimZero, "trim_zero", false, "trim trailing zero bytes")
 	fs.BoolVar(&f.TrimZero, "z", false, "alias for --trim_zero")
 	return f
@@ -36,9 +37,18 @@ func GetAddFlags(fs *flag.FlagSet) interface{} {
 func GetCmd(d *Dispatcher, ctx context.Context, args []string, fval interface{}) int {
 	f := fval.(*GetFlags)
 
-	client, err := cas.DialClient(f.Spec)
+	backend := f.Backend
+	if backend == "" {
+		backend = d.Backend
+	}
+	if backend == "" {
+		fmt.Fprintf(d.Err, "error: must specify --backend\n")
+		return 2
+	}
+
+	client, err := cas.DialClient(backend)
 	if err != nil {
-		fmt.Fprintf(d.Err, "error: failed to connect to CAS: %q: %v\n", f.Spec, err)
+		fmt.Fprintf(d.Err, "error: failed to connect to CAS: %q: %v\n", backend, err)
 		return 1
 	}
 	defer client.Close()
@@ -50,6 +60,10 @@ func GetCmd(d *Dispatcher, ctx context.Context, args []string, fval interface{})
 			return 1
 		}
 		block := reply.Block
+		if block == nil {
+			fmt.Fprintf(d.Err, "info: CAS block %q not found\n", addr)
+			continue
+		}
 		if f.TrimZero {
 			block = bytes.TrimRight(block, "\x00")
 		}
