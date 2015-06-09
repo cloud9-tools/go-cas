@@ -23,7 +23,7 @@ func DialClient(target string, opts ...grpc.DialOption) (*Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	return NewClient(conn)
+	return NewClient(conn), nil
 }
 
 func NewClient(conn *grpc.ClientConn) *Client {
