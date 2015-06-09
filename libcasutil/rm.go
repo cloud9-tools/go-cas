@@ -29,7 +29,7 @@ func RmAddFlags(fs *flag.FlagSet) interface{} {
 func RmCmd(d *Dispatcher, ctx context.Context, args []string, fval interface{}) int {
 	f := fval.(*RmFlags)
 
-	client, err := cas.NewClient(f.Spec)
+	client, err := cas.DialClient(f.Spec)
 	if err != nil {
 		fmt.Fprintf(d.Err, "error: failed to open CAS %q: %v\n", f.Spec, err)
 		return 1

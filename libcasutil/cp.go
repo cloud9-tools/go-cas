@@ -30,14 +30,14 @@ func CpAddFlags(fs *flag.FlagSet) interface{} {
 func CpCmd(d *Dispatcher, ctx context.Context, args []string, fval interface{}) int {
 	f := fval.(*CpFlags)
 
-	srcClient, err := cas.NewClient(f.Source)
+	srcClient, err := cas.DialClient(f.Source)
 	if err != nil {
 		fmt.Fprintf(d.Err, "error: failed to connect to source CAS: %q: %v\n", f.Source, err)
 		return 1
 	}
 	defer srcClient.Close()
 
-	dstClient, err := cas.NewClient(f.Destination)
+	dstClient, err := cas.DialClient(f.Destination)
 	if err != nil {
 		fmt.Fprintf(d.Err, "error: failed to connect to dest CAS: %q: %v\n", f.Destination, err)
 		return 1

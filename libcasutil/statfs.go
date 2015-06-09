@@ -31,7 +31,7 @@ func StatfsCmd(d *Dispatcher, ctx context.Context, args []string, fval interface
 		return 2
 	}
 
-	client, err := cas.NewClient(f.Spec)
+	client, err := cas.DialClient(f.Spec)
 	if err != nil {
 		fmt.Fprintf(d.Err, "error: failed to open CAS %q: %v\n", f.Spec, err)
 		return 1

@@ -32,7 +32,7 @@ func PutAddFlags(fs *flag.FlagSet) interface{} {
 func PutCmd(d *Dispatcher, ctx context.Context, args []string, fval interface{}) int {
 	f := fval.(*PutFlags)
 
-	client, err := cas.NewClient(f.Spec)
+	client, err := cas.DialClient(f.Spec)
 	if err != nil {
 		fmt.Fprintf(d.Err, "error: failed to open CAS %q: %v\n", f.Spec, err)
 		return 1

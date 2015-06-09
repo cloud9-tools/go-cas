@@ -36,7 +36,7 @@ func GetAddFlags(fs *flag.FlagSet) interface{} {
 func GetCmd(d *Dispatcher, ctx context.Context, args []string, fval interface{}) int {
 	f := fval.(*GetFlags)
 
-	client, err := cas.NewClient(f.Spec)
+	client, err := cas.DialClient(f.Spec)
 	if err != nil {
 		fmt.Fprintf(d.Err, "error: failed to connect to CAS: %q: %v\n", f.Spec, err)
 		return 1

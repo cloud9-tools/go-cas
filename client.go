@@ -15,7 +15,7 @@ type Client struct {
 	proto.CASClient
 }
 
-func NewClient(target string, opts ...grpc.DialOption) (*Client, error) {
+func DialClient(target string, opts ...grpc.DialOption) (*Client, error) {
 	opts2 := make([]grpc.DialOption, 0, len(opts)+1)
 	opts2 = append(opts2, grpc.WithDialer(Dialer))
 	opts2 = append(opts2, opts...)
@@ -23,7 +23,11 @@ func NewClient(target string, opts ...grpc.DialOption) (*Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Client{conn, proto.NewCASClient(conn)}, nil
+	return NewClient(conn)
+}
+
+func NewClient(conn *grpc.ClientConn) *Client {
+	return &Client{conn, proto.NewCASClient(conn)}
 }
 
 func Dialer(addr string, timeout time.Duration) (net.Conn, error) {
