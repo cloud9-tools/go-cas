@@ -5,31 +5,37 @@ import (
 	"io"
 )
 
-// EqualByteSlices returns true if the two slices are elementwise equal.
-func EqualByteSlices(a, b []byte) bool {
-	if len(a) != len(b) {
-		return false
-	}
-	for i := 0; i < len(a); i += 1 {
-		if a[i] != b[i] {
-			return false
+func VerifyAddrs(expected, actual *Addr, block []byte) error {
+	var ok bool
+	if expected == nil || actual == nil {
+		ok = (expected == nil && actual == nil)
+	} else {
+		ok = true
+		for i := 0; i<32; i++ {
+			if expected[i] != actual[i] {
+				ok = false
+				break
+			}
 		}
 	}
-	return true
-}
-
-// VerifyIntegrity returns nil if Hash(block) equals addr, or returns an
-// IntegrityError if the hashes are different.
-func VerifyIntegrity(addr Addr, block []byte) error {
-	addr2 := Hash(block)
-	if !EqualByteSlices(addr[:], addr2[:]) {
+	if !ok {
 		return IntegrityError{
-			Addr:         addr,
-			CorruptAddr:  addr2,
+			Addr:         expected,
+			CorruptAddr:  actual,
 			CorruptBlock: block,
 		}
 	}
 	return nil
+}
+
+// VerifyIntegrity returns nil if HashBlock(block) equals addr, or returns an
+// IntegrityError if the hashes are different.
+func VerifyIntegrity(expected *Addr, block []byte) error {
+	actual, err := HashBlock(block)
+	if err != nil {
+		return err
+	}
+	return VerifyAddrs(expected, actual, block)
 }
 
 func ReadBlock(r io.Reader) ([]byte, error) {
@@ -68,4 +74,28 @@ func ReadBlockAt(r io.ReaderAt, offset int64) ([]byte, error) {
 		return nil, errors.New("short read")
 	}
 	return block, nil
+}
+
+func EffectiveLimit(a, b int64, c func() int64) int64 {
+	const maxuint64 = ^uint64(0)
+	const maxint64 = int64(maxuint64 >> 1)
+
+	hasA := a > 0
+	hasB := b > 0
+	if hasA || hasB {
+		if !hasA {
+			a = maxint64
+		}
+		if !hasB {
+			b = maxint64
+		}
+		if b < a {
+			return b
+		}
+		return a
+	}
+	if c != nil {
+		return c()
+	}
+	return maxint64
 }

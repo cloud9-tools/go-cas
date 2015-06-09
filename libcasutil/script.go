@@ -1,6 +1,7 @@
 package libcasutil // import "github.com/chronos-tachyon/go-cas/libcasutil"
 
 import (
+	"flag"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -15,13 +16,21 @@ const ScriptHelpText = `Usage: casutil script <filename>...
 	Executes commands from the named file.
 `
 
-type ScriptFlags struct{ Trace bool }
+type ScriptFlags struct {
+	Spec  string
+	Trace bool
+}
+
+func ScriptAddFlags(fs *flag.FlagSet) interface{} {
+	f := &ScriptFlags{}
+	fs.StringVar(&f.Spec, "spec", "", "CAS server to connect to")
+	fs.BoolVar(&f.Trace, "trace", false, "trace commands as they execute")
+	fs.BoolVar(&f.Trace, "x", false, "alias for --trace")
+	return f
+}
 
 func ScriptCmd(d *Dispatcher, ctx context.Context, args []string, fval interface{}) int {
-	var trace bool
-	if fval != nil {
-		trace = fval.(*ScriptFlags).Trace
-	}
+	f := fval.(*ScriptFlags)
 
 	var scripts [][]string
 	for _, arg := range args {
@@ -45,11 +54,11 @@ func ScriptCmd(d *Dispatcher, ctx context.Context, args []string, fval interface
 		scripts = append(scripts, script...)
 	}
 	for _, line := range scripts {
-		if trace {
+		if f.Trace {
 			fmt.Fprintf(d.Err, "+ %s\n", strings.Join(line, " "))
 		}
 		rc := d.Dispatch(line)
-		if trace {
+		if f.Trace {
 			fmt.Fprintf(d.Err, "? %d\n", rc)
 		}
 		if rc != 0 {

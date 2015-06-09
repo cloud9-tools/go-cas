@@ -1,9 +1,11 @@
 package libcasutil // import "github.com/chronos-tachyon/go-cas/libcasutil"
 
 import (
+	"flag"
 	"fmt"
 
 	"github.com/chronos-tachyon/go-cas"
+	"github.com/chronos-tachyon/go-cas/proto"
 	"golang.org/x/net/context"
 )
 
@@ -12,35 +14,36 @@ const RmHelpText = `Usage: casutil rm [--shred] <addr>...
 	If --shred is specified, the command shells out to shred(1).
 `
 
-type RmFlags struct{ Shred bool }
+type RmFlags struct {
+	Spec  string
+	Shred bool
+}
+
+func RmAddFlags(fs *flag.FlagSet) interface{} {
+	f := &RmFlags{}
+	fs.StringVar(&f.Spec, "spec", "", "CAS server to connect to")
+	fs.BoolVar(&f.Shred, "shred", false, "attempt secure destruction?")
+	return f
+}
 
 func RmCmd(d *Dispatcher, ctx context.Context, args []string, fval interface{}) int {
-	var shred bool
-	if fval != nil {
-		shred = fval.(*RmFlags).Shred
-	}
+	f := fval.(*RmFlags)
 
-	addrs := make([]cas.Addr, 0, len(args))
-	for _, arg := range args {
-		addr, err := cas.ParseAddr(arg)
-		if err != nil {
-			fmt.Fprintf(d.Err, "error: failed to parse CAS address: %v\n", err)
-			return 2
-		}
-		addrs = append(addrs, *addr)
-	}
-
-	mainCAS, err := d.MainSpec.Open(cas.ReadWrite)
+	client, err := cas.NewClient(f.Spec)
 	if err != nil {
-		fmt.Fprintf(d.Err, "error: failed to open CAS %q: %v\n", d.MainSpec, err)
+		fmt.Fprintf(d.Err, "error: failed to open CAS %q: %v\n", f.Spec, err)
 		return 1
 	}
+	defer client.Close()
 
 	ret := 0
-	for _, addr := range addrs {
-		err = mainCAS.Release(ctx, addr, shred)
+	for _, addr := range args {
+		_, err = client.Stub.Release(ctx, &proto.ReleaseRequest{
+			Addr:  addr,
+			Shred: f.Shred,
+		})
 		if err != nil {
-			fmt.Fprintf(d.Err, "error: failed to release CAS block: %v\n", err)
+			fmt.Fprintf(d.Err, "error: failed to release CAS block: %q: %v\n", addr, err)
 			ret = 1
 		}
 	}

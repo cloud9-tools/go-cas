@@ -1,6 +1,7 @@
 package libcasutil // import "github.com/chronos-tachyon/go-cas/libcasutil"
 
 import (
+	"flag"
 	"fmt"
 
 	"golang.org/x/net/context"
@@ -9,6 +10,10 @@ import (
 const HelpHelpText = `Usage: casutil help [<topic>]
 	Prints help text on the requested topic.
 `
+
+func HelpAddFlags(_ *flag.FlagSet) interface{} {
+	return nil
+}
 
 func HelpCmd(d *Dispatcher, ctx context.Context, args []string, _ interface{}) int {
 	if len(args) > 1 {

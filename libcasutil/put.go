@@ -1,12 +1,14 @@
 package libcasutil // import "github.com/chronos-tachyon/go-cas/libcasutil"
 
 import (
+	"flag"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"strings"
 
 	"github.com/chronos-tachyon/go-cas"
+	"github.com/chronos-tachyon/go-cas/proto"
 	"golang.org/x/net/context"
 )
 
@@ -17,10 +19,22 @@ Usage: ... | casutil put
 	received data is too short, it will be padded with \x00's.
 `
 
-func PutCmd(d *Dispatcher, ctx context.Context, args []string, _ interface{}) int {
-	mainCAS, err := d.MainSpec.Open(cas.ReadWrite)
+type PutFlags struct {
+	Spec string
+}
+
+func PutAddFlags(fs *flag.FlagSet) interface{} {
+	f := &PutFlags{}
+	fs.StringVar(&f.Spec, "spec", "", "CAS server to connect to")
+	return f
+}
+
+func PutCmd(d *Dispatcher, ctx context.Context, args []string, fval interface{}) int {
+	f := fval.(*PutFlags)
+
+	client, err := cas.NewClient(f.Spec)
 	if err != nil {
-		fmt.Fprintf(d.Err, "error: failed to open CAS %q: %v\n", d.MainSpec, err)
+		fmt.Fprintf(d.Err, "error: failed to open CAS %q: %v\n", f.Spec, err)
 		return 1
 	}
 
@@ -38,7 +52,7 @@ func PutCmd(d *Dispatcher, ctx context.Context, args []string, _ interface{}) in
 				return 3
 			}
 		} else if strings.HasPrefix(arg, "<<<") {
-			data = []byte(strings.TrimPrefix(arg, "<<<"))
+			data = []byte(strings.TrimPrefix(arg, "<<<") + "\n")
 		} else {
 			data, err = ioutil.ReadFile(arg)
 			if err != nil {
@@ -46,12 +60,12 @@ func PutCmd(d *Dispatcher, ctx context.Context, args []string, _ interface{}) in
 				return 3
 			}
 		}
-		addr, err := mainCAS.Put(ctx, data)
+		reply, err := client.Stub.Put(ctx, &proto.PutRequest{Block: data})
 		if err != nil {
 			fmt.Fprintf(d.Err, "error: failed to put CAS block: %v\n", err)
 			return 1
 		}
-		fmt.Fprintln(d.Out, addr)
+		fmt.Fprintln(d.Out, reply.Addr)
 	}
 
 	return 0

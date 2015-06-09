@@ -1,10 +1,13 @@
 package libcasutil // import "github.com/chronos-tachyon/go-cas/libcasutil"
 
 import (
+	"flag"
 	"fmt"
+	"io"
 	"regexp"
 
 	"github.com/chronos-tachyon/go-cas"
+	"github.com/chronos-tachyon/go-cas/proto"
 	"golang.org/x/net/context"
 )
 
@@ -15,7 +18,19 @@ const GrepHelpText = `Usage: casutil grep <regexp>
 	not perfectly compatible with Perl, PCRE, and/or RE2.
 `
 
-func GrepCmd(d *Dispatcher, ctx context.Context, args []string, _ interface{}) int {
+type GrepFlags struct {
+	Spec string
+}
+
+func GrepAddFlags(fs *flag.FlagSet) interface{} {
+	f := &GrepFlags{}
+	fs.StringVar(&f.Spec, "spec", "", "CAS server to connect to")
+	return f
+}
+
+func GrepCmd(d *Dispatcher, ctx context.Context, args []string, fval interface{}) int {
+	f := fval.(*GrepFlags)
+
 	if len(args) != 1 {
 		fmt.Fprintf(d.Err, "error: grep takes exactly one argument!  got %q\n", args)
 		return 2
@@ -27,19 +42,31 @@ func GrepCmd(d *Dispatcher, ctx context.Context, args []string, _ interface{}) i
 		return 2
 	}
 
-	mainCAS, err := d.MainSpec.Open(cas.ReadOnly)
+	client, err := cas.NewClient(f.Spec)
 	if err != nil {
-		fmt.Fprintf(d.Err, "error: failed to open CAS %q: %v\n", d.MainSpec, err)
+		fmt.Fprintf(d.Err, "error: failed to open CAS %q: %v\n", f.Spec, err)
+		return 1
+	}
+	defer client.Close()
+
+	stream, err := client.Stub.Walk(ctx, &proto.WalkRequest{
+		WantBlocks: true,
+	})
+	if err != nil {
+		fmt.Fprintf(d.Err, "error: %v\n", err)
 		return 1
 	}
 
-	for item := range mainCAS.Walk(ctx, true) {
-		if !item.IsValid {
-			continue
+	for {
+		item, err := stream.Recv()
+		if err == io.EOF {
+			break
 		}
-		if item.Err != nil {
-			fmt.Fprintf(d.Err, "error: %v\n", item.Err)
-		} else if re.Match(item.Block) {
+		if err != nil {
+			fmt.Fprintf(d.Err, "error: %v\n", err)
+			return 1
+		}
+		if re.Match(item.Block) {
 			fmt.Fprintln(d.Out, item.Addr)
 		}
 	}

@@ -1,0 +1,57 @@
+syntax = "proto3";
+
+package chronos.cas;
+
+option go_package = "proto";
+
+service CAS {
+  rpc Get (GetRequest) returns (GetReply) {}
+  rpc Put (PutRequest) returns (PutReply) {}
+  rpc Release (ReleaseRequest) returns (ReleaseReply) {}
+  rpc Stat (StatRequest) returns (StatReply) {}
+  rpc Walk (WalkRequest) returns (stream WalkReply) {}
+}
+
+message GetRequest {
+  string addr = 1;
+}
+
+message GetReply {
+  bytes block = 1;
+}
+
+message PutRequest {
+  string addr = 1;
+  bytes block = 2;
+}
+
+message PutReply {
+  string addr = 1;
+  bool inserted = 2;
+}
+
+message ReleaseRequest {
+  string addr = 1;
+  bool shred = 2;
+}
+
+message ReleaseReply {
+  bool deleted = 1;
+}
+
+message StatRequest {
+}
+
+message StatReply {
+  int64 blocks_used = 1;
+  int64 blocks_free = 2;
+}
+
+message WalkRequest {
+  bool want_blocks = 1;
+}
+
+message WalkReply {
+  string addr = 1;
+  bytes block = 2;
+}

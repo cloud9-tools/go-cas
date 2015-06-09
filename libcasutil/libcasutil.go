@@ -7,7 +7,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/chronos-tachyon/go-cas"
 	"golang.org/x/net/context"
 )
 
@@ -19,8 +18,6 @@ type Dispatcher struct {
 	In          io.Reader
 	Out         io.Writer
 	Err         io.Writer
-	MainSpec    cas.Spec
-	AltSpec     cas.Spec
 	Timeout     time.Duration
 }
 
@@ -43,29 +40,15 @@ func NewDispatcher(help string) *Dispatcher {
 		Out:         os.Stdout,
 		Err:         os.Stderr,
 	}
-	d.AddCommand("get", GetHelpText, GetCmd, func(fs *flag.FlagSet) interface{} {
-		fval := &GetFlags{}
-		fs.BoolVar(&fval.TrimZero, "trim_zero", false, "trim trailing zero bytes")
-		fs.BoolVar(&fval.TrimZero, "z", false, "alias for --trim_zero")
-		return fval
-	})
-	d.AddCommand("put", PutHelpText, PutCmd, nil)
-	d.AddCommand("cp", CpHelpText, CpCmd, nil)
-	d.AddCommand("rm", RmHelpText, RmCmd, func(fs *flag.FlagSet) interface{} {
-		fval := &RmFlags{}
-		fs.BoolVar(&fval.Shred, "shred", false, "attempt secure destruction?")
-		return fval
-	})
-	d.AddCommand("ls", LsHelpText, LsCmd, nil)
-	d.AddCommand("grep", GrepHelpText, GrepCmd, nil)
-	d.AddCommand("statfs", StatfsHelpText, StatfsCmd, nil)
-	d.AddCommand("script", ScriptHelpText, ScriptCmd, func(fs *flag.FlagSet) interface{} {
-		fval := &ScriptFlags{}
-		fs.BoolVar(&fval.Trace, "trace", false, "trace commands as they execute")
-		fs.BoolVar(&fval.Trace, "x", false, "alias for --trace")
-		return fval
-	})
-	d.AddCommand("help", HelpHelpText, HelpCmd, nil)
+	d.AddCommand("get", GetHelpText, GetCmd, GetAddFlags)
+	d.AddCommand("put", PutHelpText, PutCmd, PutAddFlags)
+	d.AddCommand("cp", CpHelpText, CpCmd, CpAddFlags)
+	d.AddCommand("rm", RmHelpText, RmCmd, RmAddFlags)
+	d.AddCommand("ls", LsHelpText, LsCmd, LsAddFlags)
+	d.AddCommand("grep", GrepHelpText, GrepCmd, GrepAddFlags)
+	d.AddCommand("statfs", StatfsHelpText, StatfsCmd, StatfsAddFlags)
+	d.AddCommand("script", ScriptHelpText, ScriptCmd, ScriptAddFlags)
+	d.AddCommand("help", HelpHelpText, HelpCmd, HelpAddFlags)
 	return d
 }
 

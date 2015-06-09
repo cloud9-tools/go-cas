@@ -2,10 +2,12 @@ package libcasutil // import "github.com/chronos-tachyon/go-cas/libcasutil"
 
 import (
 	"bytes"
+	"flag"
 	"fmt"
 	"os"
 
 	"github.com/chronos-tachyon/go-cas"
+	"github.com/chronos-tachyon/go-cas/proto"
 	"github.com/chronos-tachyon/go-ioutil2"
 	"golang.org/x/net/context"
 )
@@ -19,41 +21,38 @@ const GetHelpText = `Usage: casutil get [-z] <addr>...
 `
 
 type GetFlags struct {
+	Spec     string
 	TrimZero bool
 }
 
+func GetAddFlags(fs *flag.FlagSet) interface{} {
+	f := &GetFlags{}
+	fs.StringVar(&f.Spec, "spec", "", "CAS server to connect to")
+	fs.BoolVar(&f.TrimZero, "trim_zero", false, "trim trailing zero bytes")
+	fs.BoolVar(&f.TrimZero, "z", false, "alias for --trim_zero")
+	return f
+}
+
 func GetCmd(d *Dispatcher, ctx context.Context, args []string, fval interface{}) int {
-	var trimZero bool
-	if fval != nil {
-		trimZero = fval.(*GetFlags).TrimZero
-	}
+	f := fval.(*GetFlags)
 
-	addrs := make([]cas.Addr, 0, len(args))
-	for _, arg := range args {
-		addr, err := cas.ParseAddr(arg)
-		if err != nil {
-			fmt.Fprintf(d.Err, "error: failed to parse CAS address: %v\n", err)
-			return 2
-		}
-		addrs = append(addrs, *addr)
-	}
-
-	mainCAS, err := d.MainSpec.Open(cas.ReadOnly)
+	client, err := cas.NewClient(f.Spec)
 	if err != nil {
-		fmt.Fprintf(d.Err, "error: failed to open CAS %q: %v\n", d.MainSpec, err)
+		fmt.Fprintf(d.Err, "error: failed to connect to CAS: %q: %v\n", f.Spec, err)
 		return 1
 	}
+	defer client.Close()
 
-	for _, addr := range addrs {
-		block, err := mainCAS.Get(ctx, addr)
+	for _, addr := range args {
+		reply, err := client.Stub.Get(ctx, &proto.GetRequest{Addr: addr})
 		if err != nil {
-			fmt.Fprintf(d.Err, "error: failed to get CAS block: %v\n", err)
+			fmt.Fprintf(d.Err, "error: failed to retrieve CAS block: %q: %v\n", addr, err)
 			return 1
 		}
-		if trimZero {
+		block := reply.Block
+		if f.TrimZero {
 			block = bytes.TrimRight(block, "\x00")
 		}
-
 		err = ioutil2.WriteAll(os.Stdout, block)
 		if err != nil {
 			fmt.Fprintf(d.Err, "error: failed to write %q to stdout: %v\n", addr, err)
