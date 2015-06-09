@@ -17,13 +17,11 @@ const ScriptHelpText = `Usage: casutil script <filename>...
 `
 
 type ScriptFlags struct {
-	Spec  string
 	Trace bool
 }
 
 func ScriptAddFlags(fs *flag.FlagSet) interface{} {
 	f := &ScriptFlags{}
-	fs.StringVar(&f.Spec, "spec", "", "CAS server to connect to")
 	fs.BoolVar(&f.Trace, "trace", false, "trace commands as they execute")
 	fs.BoolVar(&f.Trace, "x", false, "alias for --trace")
 	return f

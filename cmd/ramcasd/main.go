@@ -62,13 +62,13 @@ func (s *Server) Put(ctx context.Context, in *proto.PutRequest) (*proto.PutReply
 		}
 	}
 	out := &proto.PutReply{}
+	out.Addr = cas.FormatAddr(computedAddr)
 	key := cas.KeyFromAddr(computedAddr)
 	s.Mutex.Lock()
 	defer s.Mutex.Unlock()
-	out.Addr = cas.FormatAddr(computedAddr)
 	if _, found := s.Blocks[key]; !found {
 		if s.Used >= s.Limit {
-			return nil, cas.NoSpaceError{s.Limit, s.Used}
+			return nil, cas.NoSpaceError{Limit: s.Limit, Used: s.Used}
 		}
 		s.Blocks[key] = Block{Addr: computedAddr, Data: block}
 		s.Used++
@@ -146,22 +146,22 @@ func main() {
 	}
 
 	network := "tcp"
-	listen := *bindFlag
-	if strings.HasPrefix(listen, "@") {
+	address := *bindFlag
+	if strings.HasPrefix(address, "@") {
 		network = "unix"
-		listen = "\x00" + listen[1:]
-	} else if strings.Index(listen, "/") >= 0 {
+		address = "\x00" + address[1:]
+	} else if strings.Index(address, "/") >= 0 {
 		network = "unix"
 	}
 
-	lis, err := net.Listen(network, listen)
+	listen, err := net.Listen(network, address)
 	if err != nil {
-		log.Fatalf("failed to listen: %q, %q: %v", network, listen, err)
+		log.Fatalf("failed to listen: %q, %q: %v", network, address, err)
 	}
 	s := grpc.NewServer()
 	proto.RegisterCASServer(s, &Server{
 		Blocks: make(map[string]Block),
 		Limit:  *limitFlag,
 	})
-	s.Serve(lis)
+	s.Serve(listen)
 }
