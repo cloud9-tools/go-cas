@@ -60,7 +60,7 @@ func PutCmd(d *Dispatcher, ctx context.Context, args []string, fval interface{})
 				return 3
 			}
 		}
-		reply, err := client.Stub.Put(ctx, &proto.PutRequest{Block: data})
+		reply, err := client.Put(ctx, &proto.PutRequest{Block: data})
 		if err != nil {
 			fmt.Fprintf(d.Err, "error: failed to put CAS block: %v\n", err)
 			return 1

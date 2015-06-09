@@ -124,7 +124,7 @@ func (s *Server) Walk(in *proto.WalkRequest, stream proto.CAS_WalkServer) error 
 			data = block.Data
 		}
 		err := stream.Send(&proto.WalkReply{
-			Addr: cas.FormatAddr(block.Addr),
+			Addr:  cas.FormatAddr(block.Addr),
 			Block: data,
 		})
 		if err != nil {

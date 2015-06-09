@@ -38,7 +38,7 @@ func RmCmd(d *Dispatcher, ctx context.Context, args []string, fval interface{}) 
 
 	ret := 0
 	for _, addr := range args {
-		_, err = client.Stub.Release(ctx, &proto.ReleaseRequest{
+		_, err = client.Release(ctx, &proto.ReleaseRequest{
 			Addr:  addr,
 			Shred: f.Shred,
 		})

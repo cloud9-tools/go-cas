@@ -10,16 +10,9 @@ import (
 	"google.golang.org/grpc"
 )
 
-type ZeroMode bool
-
-const (
-	KeepZero ZeroMode = false
-	TrimZero ZeroMode = true
-)
-
 type Client struct {
-	Conn *grpc.ClientConn
-	Stub proto.CASClient
+	*grpc.ClientConn
+	proto.CASClient
 }
 
 func NewClient(target string, opts ...grpc.DialOption) (*Client, error) {
@@ -30,14 +23,7 @@ func NewClient(target string, opts ...grpc.DialOption) (*Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Client{
-		Conn: conn,
-		Stub: proto.NewCASClient(conn),
-	}, nil
-}
-
-func (c *Client) Close() error {
-	return c.Conn.Close()
+	return &Client{conn, proto.NewCASClient(conn)}, nil
 }
 
 func Dialer(addr string, timeout time.Duration) (net.Conn, error) {

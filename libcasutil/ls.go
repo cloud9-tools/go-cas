@@ -38,7 +38,7 @@ func LsCmd(d *Dispatcher, ctx context.Context, args []string, fval interface{}) 
 		return 1
 	}
 
-	stream, err := client.Stub.Walk(ctx, &proto.WalkRequest{})
+	stream, err := client.Walk(ctx, &proto.WalkRequest{})
 	if err != nil {
 		fmt.Fprintf(d.Err, "error: %v\n", err)
 		return 1

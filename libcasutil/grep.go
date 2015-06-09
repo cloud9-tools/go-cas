@@ -49,7 +49,7 @@ func GrepCmd(d *Dispatcher, ctx context.Context, args []string, fval interface{}
 	}
 	defer client.Close()
 
-	stream, err := client.Stub.Walk(ctx, &proto.WalkRequest{
+	stream, err := client.Walk(ctx, &proto.WalkRequest{
 		WantBlocks: true,
 	})
 	if err != nil {

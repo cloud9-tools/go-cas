@@ -44,7 +44,7 @@ func GetCmd(d *Dispatcher, ctx context.Context, args []string, fval interface{})
 	defer client.Close()
 
 	for _, addr := range args {
-		reply, err := client.Stub.Get(ctx, &proto.GetRequest{Addr: addr})
+		reply, err := client.Get(ctx, &proto.GetRequest{Addr: addr})
 		if err != nil {
 			fmt.Fprintf(d.Err, "error: failed to retrieve CAS block: %q: %v\n", addr, err)
 			return 1

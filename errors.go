@@ -25,7 +25,7 @@ func (err IntegrityError) Error() string {
 
 type NoSpaceError struct {
 	Limit int64
-	Used int64
+	Used  int64
 }
 
 func (err NoSpaceError) Error() string {

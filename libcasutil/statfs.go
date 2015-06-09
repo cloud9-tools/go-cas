@@ -37,7 +37,7 @@ func StatfsCmd(d *Dispatcher, ctx context.Context, args []string, fval interface
 		return 1
 	}
 
-	reply, err := client.Stub.Stat(ctx, &proto.StatRequest{})
+	reply, err := client.Stat(ctx, &proto.StatRequest{})
 	if err != nil {
 		fmt.Fprintf(d.Err, "error: %v\n", err)
 	}

@@ -45,13 +45,13 @@ func CpCmd(d *Dispatcher, ctx context.Context, args []string, fval interface{}) 
 	defer dstClient.Close()
 
 	for _, addr := range args {
-		reply, err := srcClient.Stub.Get(ctx, &proto.GetRequest{Addr: addr})
+		reply, err := srcClient.Get(ctx, &proto.GetRequest{Addr: addr})
 		if err != nil {
 			fmt.Fprintf(d.Err, "error: failed to get CAS block: %v\n", err)
 			return 1
 		}
 
-		_, err = dstClient.Stub.Put(ctx, &proto.PutRequest{Addr: addr, Block: reply.Block})
+		_, err = dstClient.Put(ctx, &proto.PutRequest{Addr: addr, Block: reply.Block})
 		if err != nil {
 			fmt.Fprintf(d.Err, "error: failed to put CAS block: %v\n", err)
 			return 1

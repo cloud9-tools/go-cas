@@ -11,7 +11,7 @@ func VerifyAddrs(expected, actual *Addr, block []byte) error {
 		ok = (expected == nil && actual == nil)
 	} else {
 		ok = true
-		for i := 0; i<32; i++ {
+		for i := 0; i < 32; i++ {
 			if expected[i] != actual[i] {
 				ok = false
 				break
