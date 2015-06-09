@@ -61,6 +61,7 @@ func GrepCmd(d *Dispatcher, ctx context.Context, args []string, fval interface{}
 
 	stream, err := client.Walk(ctx, &proto.WalkRequest{
 		WantBlocks: true,
+		Regexp:     args[0],
 	})
 	if err != nil {
 		fmt.Fprintf(d.Err, "error: %v\n", err)

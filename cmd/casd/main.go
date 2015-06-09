@@ -11,6 +11,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/chronos-tachyon/go-cas"
@@ -99,6 +100,14 @@ func (s *Server) Stat(ctx context.Context, in *proto.StatRequest) (*proto.StatRe
 
 func (s *Server) Walk(in *proto.WalkRequest, stream proto.CAS_WalkServer) error {
 	var errors []error
+	var re *regexp.Regexp
+	if in.Regexp != "" {
+		var err error
+		re, err = regexp.Compile(in.Regexp)
+		if err != nil {
+			return err
+		}
+	}
 	err := filepath.Walk(s.Dir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			errors = append(errors, err)
@@ -111,12 +120,18 @@ func (s *Server) Walk(in *proto.WalkRequest, stream proto.CAS_WalkServer) error 
 		if err != nil {
 			return nil
 		}
-		block := []byte(nil)
-		if in.WantBlocks {
+		var block []byte
+		if in.WantBlocks || re != nil {
 			block, err = s.ReadBlock(addr)
 			if err != nil {
 				errors = append(errors, err)
 				return nil
+			}
+			if !re.Match(block) {
+				return nil
+			}
+			if !in.WantBlocks {
+				block = nil
 			}
 		}
 		stream.Send(&proto.WalkReply{

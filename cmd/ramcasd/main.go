@@ -4,6 +4,7 @@ import (
 	"flag"
 	"log"
 	"net"
+	"regexp"
 	"strings"
 	"sync"
 
@@ -118,8 +119,19 @@ func (s *Server) snapshot() []Block {
 
 func (s *Server) Walk(in *proto.WalkRequest, stream proto.CAS_WalkServer) error {
 	blocks := s.snapshot()
+	var re *regexp.Regexp
+	if in.Regexp != "" {
+		var err error
+		re, err = regexp.Compile(in.Regexp)
+		if err != nil {
+			return err
+		}
+	}
 	for _, block := range blocks {
 		data := []byte(nil)
+		if re != nil && !re.Match(block.Data) {
+			continue
+		}
 		if in.WantBlocks {
 			data = block.Data
 		}
