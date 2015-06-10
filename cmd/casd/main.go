@@ -453,21 +453,27 @@ func main() {
 	log.SetPrefix("casd: ")
 	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
 
-	var bindFlag, dirFlag string
+	var listenFlag, dirFlag string
 	var limitFlag int64
-	flag.StringVar(&bindFlag, "bind", "", "address to bind to")
-	flag.StringVar(&dirFlag, "dir", "", "directory in which to store CAS blocks")
-	flag.Int64Var(&limitFlag, "limit", 1048576, "maximum number of 1MiB blocks")
+	flag.StringVar(&listenFlag, "listen", "",
+		"address to listen on")
+	flag.StringVar(&dirFlag, "dir", "",
+		"directory in which to store CAS blocks")
+	flag.Int64Var(&limitFlag, "limit", 0,
+		"maximum number of "+cas.BlockSizeHuman+" blocks to store on disk")
 	flag.Parse()
 
-	if bindFlag == "" {
-		log.Fatalf("error: missing required flag: --bind")
+	if listenFlag == "" {
+		log.Fatalf("error: missing required flag: --listen")
 	}
 	if dirFlag == "" {
 		log.Fatalf("error: missing required flag: --dir")
 	}
+	if limitFlag == 0 {
+		log.Fatalf("error: missing required flag: --limit")
+	}
 
-	network, address, err := cas.ParseDialSpec(bindFlag)
+	network, address, err := cas.ParseDialSpec(listenFlag)
 	if err != nil {
 		log.Fatalf("%v", err)
 	}

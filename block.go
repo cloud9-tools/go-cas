@@ -15,6 +15,9 @@ var ErrBlockTooLong = errors.New("CAS block is too long")
 // BlockSize is the exact size of one block in the CAS, in bytes.
 const BlockSize = 1 << 20
 
+// BlockSizeHuman is an expression of BlockSize in human units.
+const BlockSizeHuman = "1MiB"
+
 // Block is a single CAS block.  Size information is not preserved.
 // To store large objects, split them into multiple CAS blocks.
 type Block [BlockSize]byte

@@ -258,16 +258,20 @@ func main() {
 	log.SetPrefix("cascached: ")
 	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
 
-	var bindFlag, backendFlag string
+	var listenFlag, backendFlag string
 	var limitFlag, numShardsFlag uint
-	flag.StringVar(&bindFlag, "bind", "", "address to bind to")
-	flag.StringVar(&backendFlag, "backend", "", "CAS backend to connect to for cache misses")
-	flag.UintVar(&limitFlag, "limit", 0, "maximum number of 1MiB blocks to cache in RAM")
-	flag.UintVar(&numShardsFlag, "num_shards", 256, "shard data n ways for parallelism")
+	flag.StringVar(&listenFlag, "listen", "",
+		"address to listen on")
+	flag.StringVar(&backendFlag, "backend", "",
+		"CAS backend to connect to for cache misses")
+	flag.UintVar(&limitFlag, "limit", 0,
+		"maximum number of "+cas.BlockSizeHuman+" blocks to cache in RAM")
+	flag.UintVar(&numShardsFlag, "num_shards", 16,
+		"shard data N ways for parallelism")
 	flag.Parse()
 
-	if bindFlag == "" {
-		log.Fatalf("error: missing required flag: --bind")
+	if listenFlag == "" {
+		log.Fatalf("error: missing required flag: --listen")
 	}
 	if backendFlag == "" {
 		log.Fatalf("error: missing required flag: --backend")
@@ -294,7 +298,7 @@ func main() {
 	}
 	defer client.Close()
 
-	network, address, err := cas.ParseDialSpec(bindFlag)
+	network, address, err := cas.ParseDialSpec(listenFlag)
 	if err != nil {
 		log.Fatalf("%v", err)
 	}
