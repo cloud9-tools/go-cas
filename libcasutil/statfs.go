@@ -51,6 +51,7 @@ func StatfsCmd(d *Dispatcher, ctx context.Context, args []string, fval interface
 	reply, err := client.Stat(ctx, &proto.StatRequest{})
 	if err != nil {
 		fmt.Fprintf(d.Err, "error: %v\n", err)
+		return 1
 	}
 
 	total := reply.BlocksFree + reply.BlocksUsed
