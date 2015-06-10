@@ -1,11 +1,6 @@
 package cas // import "github.com/chronos-tachyon/go-cas"
 
 import (
-	"errors"
-	"net"
-	"strings"
-	"time"
-
 	"github.com/chronos-tachyon/go-cas/proto"
 	"google.golang.org/grpc"
 )
@@ -28,18 +23,4 @@ func DialClient(target string, opts ...grpc.DialOption) (*Client, error) {
 
 func NewClient(conn *grpc.ClientConn) *Client {
 	return &Client{conn, proto.NewCASClient(conn)}
-}
-
-func Dialer(addr string, timeout time.Duration) (net.Conn, error) {
-	if strings.HasPrefix(addr, "tcp:") {
-		return net.DialTimeout("tcp", addr[4:], timeout)
-	}
-	if strings.HasPrefix(addr, "unix:") {
-		path := addr[5:]
-		if strings.HasPrefix(path, "@") {
-			path = "\x00" + path[1:]
-		}
-		return net.DialTimeout("unix", path, timeout)
-	}
-	return nil, errors.New("failed to parse dial spec")
 }

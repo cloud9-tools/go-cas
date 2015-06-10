@@ -5,7 +5,6 @@ import (
 	"log"
 	"net"
 	"regexp"
-	"strings"
 	"sync"
 
 	"github.com/chronos-tachyon/go-cas"
@@ -149,21 +148,20 @@ func (s *Server) Walk(in *proto.WalkRequest, stream proto.CAS_WalkServer) error 
 func main() {
 	log.SetPrefix("ramcasd: ")
 	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
-	bindFlag := flag.String("bind", "", "address to bind to")
-	limitFlag := flag.Int64("limit", 1024, "maximum number of 1MiB blocks")
+
+	var bindFlag string
+	var limitFlag int64
+	flag.StringVar(&bindFlag, "bind", "", "address to bind to")
+	flag.Int64Var(&limitFlag, "limit", 1024, "maximum number of 1MiB blocks")
 	flag.Parse()
 
-	if *bindFlag == "" {
+	if bindFlag == "" {
 		log.Fatalf("error: missing required flag: --bind")
 	}
 
-	network := "tcp"
-	address := *bindFlag
-	if strings.HasPrefix(address, "@") {
-		network = "unix"
-		address = "\x00" + address[1:]
-	} else if strings.Index(address, "/") >= 0 {
-		network = "unix"
+	network, address, err := cas.ParseDialSpec(bindFlag)
+	if err != nil {
+		log.Fatalf("%v", err)
 	}
 
 	listen, err := net.Listen(network, address)
@@ -173,7 +171,7 @@ func main() {
 	s := grpc.NewServer()
 	proto.RegisterCASServer(s, &Server{
 		Blocks: make(map[string]Block),
-		Limit:  *limitFlag,
+		Limit:  limitFlag,
 	})
 	s.Serve(listen)
 }

@@ -450,25 +450,24 @@ func isFileAlreadyExists(err error) bool {
 func main() {
 	log.SetPrefix("casd: ")
 	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
-	bindFlag := flag.String("bind", "", "address to bind to")
-	dirFlag := flag.String("dir", "", "directory in which to store CAS blocks")
-	limitFlag := flag.Int64("limit", 1048576, "maximum number of 1MiB blocks")
+
+	var bindFlag, dirFlag string
+	var limitFlag int64
+	flag.StringVar(&bindFlag, "bind", "", "address to bind to")
+	flag.StringVar(&dirFlag, "dir", "", "directory in which to store CAS blocks")
+	flag.Int64Var(&limitFlag, "limit", 1048576, "maximum number of 1MiB blocks")
 	flag.Parse()
 
-	if *bindFlag == "" {
+	if bindFlag == "" {
 		log.Fatalf("error: missing required flag: --bind")
 	}
-	if *dirFlag == "" {
+	if dirFlag == "" {
 		log.Fatalf("error: missing required flag: --dir")
 	}
 
-	network := "tcp"
-	address := *bindFlag
-	if strings.HasPrefix(address, "@") {
-		network = "unix"
-		address = "\x00" + address[1:]
-	} else if strings.Index(address, "/") >= 0 {
-		network = "unix"
+	network, address, err := cas.ParseDialSpec(bindFlag)
+	if err != nil {
+		log.Fatalf("%v", err)
 	}
 
 	listen, err := net.Listen(network, address)
@@ -477,8 +476,8 @@ func main() {
 	}
 	s := grpc.NewServer()
 	proto.RegisterCASServer(s, &Server{
-		Dir:   *dirFlag,
-		Limit: *limitFlag,
+		Dir:   dirFlag,
+		Limit: limitFlag,
 	})
 	s.Serve(listen)
 }
