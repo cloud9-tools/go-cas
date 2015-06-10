@@ -14,9 +14,9 @@ func (err AddrParseError) Error() string {
 }
 
 type IntegrityError struct {
-	Addr         *Addr
-	CorruptAddr  *Addr
-	CorruptBlock []byte
+	Addr         Addr
+	CorruptAddr  Addr
+	CorruptBlock *Block
 }
 
 func (err IntegrityError) Error() string {

@@ -30,39 +30,39 @@ type Server struct {
 
 func (s *Server) Get(ctx context.Context, in *proto.GetRequest) (*proto.GetReply, error) {
 	out := &proto.GetReply{}
-	addr, err := cas.ParseAddr(in.Addr)
+	var addr cas.Addr
+	if err := addr.Parse(in.Addr); err != nil {
+		return nil, err
+	}
+	var block cas.Block
+	found, err := s.ReadBlock(&block, addr)
 	if err != nil {
 		return nil, err
 	}
-	block, err := s.ReadBlock(addr)
-	if err != nil {
-		return nil, err
+	if found {
+		out.Block = block[:]
 	}
-	out.Block = block
 	return out, nil
 }
 
 func (s *Server) Put(ctx context.Context, in *proto.PutRequest) (*proto.PutReply, error) {
-	expectedAddr, err := cas.ParseAddr(in.Addr)
-	if err != nil {
+	var block cas.Block
+	if err := block.Pad(in.Block); err != nil {
 		return nil, err
 	}
-	block, err := cas.PadBlock(in.Block)
-	if err != nil {
-		return nil, err
-	}
-	addr, err := cas.HashBlock(block)
-	if err != nil {
-		return nil, err
-	}
-	if expectedAddr != nil {
-		if err := cas.VerifyAddrs(expectedAddr, addr, block); err != nil {
+	addr := block.Addr()
+	if in.Addr != "" {
+		var expectedAddr cas.Addr
+		if err := expectedAddr.Parse(in.Addr); err != nil {
+			return nil, err
+		}
+		if err := cas.VerifyAddrs(expectedAddr, addr, &block); err != nil {
 			return nil, err
 		}
 	}
 	out := &proto.PutReply{}
-	out.Addr = cas.FormatAddr(addr)
-	inserted, err := s.WriteBlock(addr, block)
+	out.Addr = addr.String()
+	inserted, err := s.WriteBlock(addr, block[:])
 	if err != nil {
 		return nil, err
 	}
@@ -71,7 +71,8 @@ func (s *Server) Put(ctx context.Context, in *proto.PutRequest) (*proto.PutReply
 }
 
 func (s *Server) Release(ctx context.Context, in *proto.ReleaseRequest) (*proto.ReleaseReply, error) {
-	addr, err := cas.ParseAddr(in.Addr)
+	var addr cas.Addr
+	err := addr.Parse(in.Addr)
 	if err != nil {
 		return nil, err
 	}
@@ -120,23 +121,24 @@ func (s *Server) Walk(in *proto.WalkRequest, stream proto.CAS_WalkServer) error 
 		if err != nil {
 			return nil
 		}
-		var block []byte
+		var raw []byte
 		if in.WantBlocks || re != nil {
-			block, err = s.ReadBlock(addr)
-			if err != nil {
+			var block cas.Block
+			found, err := s.ReadBlock(&block, addr)
+			if err != nil || !found {
 				errors = append(errors, err)
 				return nil
 			}
-			if !re.Match(block) {
+			if !re.Match(block[:]) {
 				return nil
 			}
-			if !in.WantBlocks {
-				block = nil
+			if in.WantBlocks {
+				raw = block[:]
 			}
 		}
 		stream.Send(&proto.WalkReply{
-			Addr:  cas.FormatAddr(addr),
-			Block: block,
+			Addr:  addr.String(),
+			Block: raw,
 		})
 		return nil
 	})
@@ -229,30 +231,30 @@ func (s *Server) ModifyMetadata(f func(*Metadata)) error {
 	return multierror.New(errors)
 }
 
-func (s *Server) BlockPath(addr *cas.Addr) string {
+func (s *Server) BlockPath(addr cas.Addr) string {
 	return filepath.Join(s.Dir, hex.EncodeToString(addr[:])+".block")
 }
 
-func (s *Server) AddrFromBlockPath(path string) (*cas.Addr, error) {
+func (s *Server) AddrFromBlockPath(path string) (cas.Addr, error) {
+	var addr cas.Addr
 	rel, err := filepath.Rel(s.Dir, path)
 	if err != nil {
-		return nil, err
+		return addr, err
 	}
 	rel = strings.TrimSuffix(rel, ".block")
 	rel = strings.Replace(rel, "/", "", -1)
 	raw, err := hex.DecodeString(rel)
 	if err != nil {
-		return nil, err
+		return addr, err
 	}
 	if len(raw) != 32 {
-		return nil, errors.New("wrong length")
+		return addr, errors.New("wrong length")
 	}
-	addr := &cas.Addr{}
 	copy(addr[:], raw)
 	return addr, nil
 }
 
-func (s *Server) OpenBlock(addr *cas.Addr, exclusive bool) (*os.File, error) {
+func (s *Server) OpenBlock(addr cas.Addr, exclusive bool) (*os.File, error) {
 	path := s.BlockPath(addr)
 	flags := os.O_RDWR | os.O_CREATE | os.O_EXCL
 	if !exclusive {
@@ -286,26 +288,26 @@ func (s *Server) OpenBlock(addr *cas.Addr, exclusive bool) (*os.File, error) {
 	return fh, nil
 }
 
-func (s *Server) ReadBlock(addr *cas.Addr) ([]byte, error) {
+func (s *Server) ReadBlock(block *cas.Block, addr cas.Addr) (bool, error) {
 	fh, err := s.OpenBlock(addr, false)
 	if err != nil {
 		if isFileNotFound(err) {
-			return nil, nil
+			return false, nil
 		}
-		return nil, err
+		return false, err
 	}
 	defer fh.Close()
-	block, err := ioutil.ReadAll(fh)
+	err = cas.ReadBlock(block, fh)
 	if err != nil {
-		return nil, err
+		return false, err
 	}
 	if err := cas.VerifyIntegrity(addr, block); err != nil {
-		return nil, err
+		return false, err
 	}
-	return block, nil
+	return true, nil
 }
 
-func (s *Server) WriteBlock(addr *cas.Addr, block []byte) (bool, error) {
+func (s *Server) WriteBlock(addr cas.Addr, block []byte) (bool, error) {
 	fh, err := s.OpenBlock(addr, true)
 	if err != nil {
 		if isFileAlreadyExists(err) {
@@ -357,7 +359,7 @@ func (s *Server) WriteBlock(addr *cas.Addr, block []byte) (bool, error) {
 	return true, nil
 }
 
-func (s *Server) UnlinkBlock(addr *cas.Addr) (bool, error) {
+func (s *Server) UnlinkBlock(addr cas.Addr) (bool, error) {
 	path := s.BlockPath(addr)
 	if err := os.Remove(path); err != nil {
 		if isFileNotFound(err) {
@@ -369,7 +371,7 @@ func (s *Server) UnlinkBlock(addr *cas.Addr) (bool, error) {
 	return true, nil
 }
 
-func (s *Server) ShredBlock(addr *cas.Addr) (bool, error) {
+func (s *Server) ShredBlock(addr cas.Addr) (bool, error) {
 	path := s.BlockPath(addr)
 	if err := os.Rename(path, path+"~"); err != nil {
 		if isFileNotFound(err) {

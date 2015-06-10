@@ -5,41 +5,28 @@ import (
 	"io"
 )
 
-func VerifyAddrs(expected, actual *Addr, block []byte) error {
-	var ok bool
-	if expected == nil || actual == nil {
-		ok = (expected == nil && actual == nil)
-	} else {
-		ok = true
-		for i := 0; i < 32; i++ {
-			if expected[i] != actual[i] {
-				ok = false
-				break
+func VerifyAddrs(expected, actual Addr, block *Block) error {
+	for i := 0; i < 32; i++ {
+		if expected[i] != actual[i] {
+			var dup Block
+			dup = *block
+			return IntegrityError{
+				Addr:         expected,
+				CorruptAddr:  actual,
+				CorruptBlock: &dup,
 			}
-		}
-	}
-	if !ok {
-		return IntegrityError{
-			Addr:         expected,
-			CorruptAddr:  actual,
-			CorruptBlock: block,
 		}
 	}
 	return nil
 }
 
-// VerifyIntegrity returns nil if HashBlock(block) equals addr, or returns an
+// VerifyIntegrity returns nil if block.Addr() equals addr, or returns an
 // IntegrityError if the hashes are different.
-func VerifyIntegrity(expected *Addr, block []byte) error {
-	actual, err := HashBlock(block)
-	if err != nil {
-		return err
-	}
-	return VerifyAddrs(expected, actual, block)
+func VerifyIntegrity(expected Addr, block *Block) error {
+	return VerifyAddrs(expected, block.Addr(), block)
 }
 
-func ReadBlock(r io.Reader) ([]byte, error) {
-	block := make([]byte, BlockSize)
+func ReadBlock(block *Block, r io.Reader) error {
 	i := 0
 	for i < BlockSize {
 		n, err := r.Read(block[i:])
@@ -47,18 +34,17 @@ func ReadBlock(r io.Reader) ([]byte, error) {
 			break
 		}
 		if err != nil {
-			return nil, err
+			return err
 		}
 		i += n
 	}
 	if i < BlockSize {
-		return nil, errors.New("short read")
+		return errors.New("short read")
 	}
-	return block, nil
+	return nil
 }
 
-func ReadBlockAt(r io.ReaderAt, offset int64) ([]byte, error) {
-	block := make([]byte, BlockSize)
+func ReadBlockAt(block *Block, r io.ReaderAt, offset int64) error {
 	i := 0
 	for i < BlockSize {
 		n, err := r.ReadAt(block[i:], offset+int64(i))
@@ -66,14 +52,14 @@ func ReadBlockAt(r io.ReaderAt, offset int64) ([]byte, error) {
 			break
 		}
 		if err != nil {
-			return nil, err
+			return err
 		}
 		i += n
 	}
 	if i < BlockSize {
-		return nil, errors.New("short read")
+		return errors.New("short read")
 	}
-	return block, nil
+	return nil
 }
 
 func EffectiveLimit(a, b int64, c func() int64) int64 {
