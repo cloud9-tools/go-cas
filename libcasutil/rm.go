@@ -10,7 +10,7 @@ import (
 )
 
 const RmHelpText = `Usage: casutil rm [--shred] <addr>...
-	Releases the named CAS blocks.
+	Removes the named CAS blocks.
 	If --shred is specified, the command shells out to shred(1).
 `
 
@@ -48,7 +48,7 @@ func RmCmd(d *Dispatcher, ctx context.Context, args []string, fval interface{}) 
 
 	ret := 0
 	for _, addr := range args {
-		reply, err := client.Release(ctx, &proto.ReleaseRequest{
+		reply, err := client.Remove(ctx, &proto.RemoveRequest{
 			Addr:  addr,
 			Shred: f.Shred,
 		})

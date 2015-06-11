@@ -13,8 +13,8 @@ It has these top-level messages:
 	GetReply
 	PutRequest
 	PutReply
-	ReleaseRequest
-	ReleaseReply
+	RemoveRequest
+	RemoveReply
 	StatRequest
 	StatReply
 	WalkRequest
@@ -70,22 +70,22 @@ func (m *PutReply) Reset()         { *m = PutReply{} }
 func (m *PutReply) String() string { return proto1.CompactTextString(m) }
 func (*PutReply) ProtoMessage()    {}
 
-type ReleaseRequest struct {
+type RemoveRequest struct {
 	Addr  string `protobuf:"bytes,1,opt,name=addr" json:"addr,omitempty"`
 	Shred bool   `protobuf:"varint,2,opt,name=shred" json:"shred,omitempty"`
 }
 
-func (m *ReleaseRequest) Reset()         { *m = ReleaseRequest{} }
-func (m *ReleaseRequest) String() string { return proto1.CompactTextString(m) }
-func (*ReleaseRequest) ProtoMessage()    {}
+func (m *RemoveRequest) Reset()         { *m = RemoveRequest{} }
+func (m *RemoveRequest) String() string { return proto1.CompactTextString(m) }
+func (*RemoveRequest) ProtoMessage()    {}
 
-type ReleaseReply struct {
+type RemoveReply struct {
 	Deleted bool `protobuf:"varint,1,opt,name=deleted" json:"deleted,omitempty"`
 }
 
-func (m *ReleaseReply) Reset()         { *m = ReleaseReply{} }
-func (m *ReleaseReply) String() string { return proto1.CompactTextString(m) }
-func (*ReleaseReply) ProtoMessage()    {}
+func (m *RemoveReply) Reset()         { *m = RemoveReply{} }
+func (m *RemoveReply) String() string { return proto1.CompactTextString(m) }
+func (*RemoveReply) ProtoMessage()    {}
 
 type StatRequest struct {
 }
@@ -129,7 +129,7 @@ func init() {
 type CASClient interface {
 	Get(ctx context.Context, in *GetRequest, opts ...grpc.CallOption) (*GetReply, error)
 	Put(ctx context.Context, in *PutRequest, opts ...grpc.CallOption) (*PutReply, error)
-	Release(ctx context.Context, in *ReleaseRequest, opts ...grpc.CallOption) (*ReleaseReply, error)
+	Remove(ctx context.Context, in *RemoveRequest, opts ...grpc.CallOption) (*RemoveReply, error)
 	Stat(ctx context.Context, in *StatRequest, opts ...grpc.CallOption) (*StatReply, error)
 	Walk(ctx context.Context, in *WalkRequest, opts ...grpc.CallOption) (CAS_WalkClient, error)
 }
@@ -160,9 +160,9 @@ func (c *cASClient) Put(ctx context.Context, in *PutRequest, opts ...grpc.CallOp
 	return out, nil
 }
 
-func (c *cASClient) Release(ctx context.Context, in *ReleaseRequest, opts ...grpc.CallOption) (*ReleaseReply, error) {
-	out := new(ReleaseReply)
-	err := grpc.Invoke(ctx, "/chronos.cas.CAS/Release", in, out, c.cc, opts...)
+func (c *cASClient) Remove(ctx context.Context, in *RemoveRequest, opts ...grpc.CallOption) (*RemoveReply, error) {
+	out := new(RemoveReply)
+	err := grpc.Invoke(ctx, "/chronos.cas.CAS/Remove", in, out, c.cc, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -215,7 +215,7 @@ func (x *cASWalkClient) Recv() (*WalkReply, error) {
 type CASServer interface {
 	Get(context.Context, *GetRequest) (*GetReply, error)
 	Put(context.Context, *PutRequest) (*PutReply, error)
-	Release(context.Context, *ReleaseRequest) (*ReleaseReply, error)
+	Remove(context.Context, *RemoveRequest) (*RemoveReply, error)
 	Stat(context.Context, *StatRequest) (*StatReply, error)
 	Walk(*WalkRequest, CAS_WalkServer) error
 }
@@ -248,12 +248,12 @@ func _CAS_Put_Handler(srv interface{}, ctx context.Context, codec grpc.Codec, bu
 	return out, nil
 }
 
-func _CAS_Release_Handler(srv interface{}, ctx context.Context, codec grpc.Codec, buf []byte) (interface{}, error) {
-	in := new(ReleaseRequest)
+func _CAS_Remove_Handler(srv interface{}, ctx context.Context, codec grpc.Codec, buf []byte) (interface{}, error) {
+	in := new(RemoveRequest)
 	if err := codec.Unmarshal(buf, in); err != nil {
 		return nil, err
 	}
-	out, err := srv.(CASServer).Release(ctx, in)
+	out, err := srv.(CASServer).Remove(ctx, in)
 	if err != nil {
 		return nil, err
 	}
@@ -306,8 +306,8 @@ var _CAS_serviceDesc = grpc.ServiceDesc{
 			Handler:    _CAS_Put_Handler,
 		},
 		{
-			MethodName: "Release",
-			Handler:    _CAS_Release_Handler,
+			MethodName: "Remove",
+			Handler:    _CAS_Remove_Handler,
 		},
 		{
 			MethodName: "Stat",

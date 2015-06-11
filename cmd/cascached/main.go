@@ -114,16 +114,16 @@ func (s *server) Put(ctx context.Context, in *proto.PutRequest) (*proto.PutReply
 	})
 	return reply, err
 }
-func (s *server) Release(ctx context.Context, in *proto.ReleaseRequest) (*proto.ReleaseReply, error) {
+func (s *server) Remove(ctx context.Context, in *proto.RemoveRequest) (*proto.RemoveReply, error) {
 	var addr cas.Addr
 	if err := addr.Parse(in.Addr); err != nil {
 		return nil, err
 	}
 	shard := s.shardFor(addr)
-	var reply *proto.ReleaseReply
+	var reply *proto.RemoveReply
 	var err error
 	locked(&shard.mutex, func() {
-		reply, err = s.fallback.Release(ctx, in)
+		reply, err = s.fallback.Remove(ctx, in)
 		if item, found := shard.byAddr[addr]; found {
 			// DELETE
 			for i, item2 := range shard.heap {

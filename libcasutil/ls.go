@@ -16,7 +16,7 @@ const LsHelpText = `Usage: casutil ls [-0]
 
 type LsFlags struct {
 	Backend string
-	Zero bool
+	Zero    bool
 }
 
 func LsAddFlags(fs *flag.FlagSet) interface{} {

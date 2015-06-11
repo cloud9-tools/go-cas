@@ -7,7 +7,7 @@ option go_package = "proto";
 service CAS {
   rpc Get (GetRequest) returns (GetReply) {}
   rpc Put (PutRequest) returns (PutReply) {}
-  rpc Release (ReleaseRequest) returns (ReleaseReply) {}
+  rpc Remove (RemoveRequest) returns (RemoveReply) {}
   rpc Stat (StatRequest) returns (StatReply) {}
   rpc Walk (WalkRequest) returns (stream WalkReply) {}
 }
@@ -30,12 +30,12 @@ message PutReply {
   bool inserted = 2;
 }
 
-message ReleaseRequest {
+message RemoveRequest {
   string addr = 1;
   bool shred = 2;
 }
 
-message ReleaseReply {
+message RemoveReply {
   bool deleted = 1;
 }
 

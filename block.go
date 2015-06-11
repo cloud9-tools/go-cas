@@ -2,21 +2,26 @@ package cas // import "github.com/chronos-tachyon/go-cas"
 
 import (
 	"bytes"
-	"encoding/hex"
 	"errors"
 	"fmt"
-	"unicode"
+	"io"
 
 	"golang.org/x/crypto/sha3"
+
+	"github.com/chronos-tachyon/go-cas/internal"
 )
 
 var ErrBlockTooLong = errors.New("CAS block is too long")
 
 // BlockSize is the exact size of one block in the CAS, in bytes.
-const BlockSize = 1 << 14
+//
+// Why 2**18?  Because the most common SSD erase block sizes are 128KiB and
+// 256KiB, and we want to avoid the fragmentation that results at granularities
+// smaller than an erase block.
+const BlockSize = 1 << 18
 
 // BlockSizeHuman is an expression of BlockSize in human units.
-const BlockSizeHuman = "16KiB"
+const BlockSizeHuman = "256KiB"
 
 // Block is a single CAS block.  Size information is not preserved.
 // To store large objects, split them into multiple CAS blocks.
@@ -37,8 +42,18 @@ func (block *Block) Pad(raw []byte) error {
 	return nil
 }
 
+// ReadFromAt reads a CAS block from the given file at the given offset.
+func (block *Block) ReadFromAt(r io.ReaderAt, offset int64) error {
+	return internal.ReadExactlyAt(r, block[:], offset)
+}
+
+// WriteToAt writes this CAS block to the given file at the given offset.
+func (block *Block) WriteToAt(w io.WriterAt, offset int64) error {
+	return internal.WriteExactlyAt(w, block[:], offset)
+}
+
 // Addr hashes this CAS block to compute its address.
-func (block *Block) Addr() Addr {
+func (block Block) Addr() Addr {
 	var addr Addr
 	shake128 := sha3.NewShake128()
 	shake128.Write(block[:])
@@ -47,83 +62,45 @@ func (block *Block) Addr() Addr {
 }
 
 // Trim returns the contents of this CAS block with trailing zeroes removed.
-func (block *Block) Trim() []byte {
+func (block Block) Trim() []byte {
 	return bytes.TrimRight(block[:], "\x00")
 }
 
-func (block *Block) GoString() string {
+func (block Block) GoString() string {
 	return block.String()
 }
 
-func (block *Block) String() string {
+func (block Block) String() string {
 	raw := block.Trim()
-	runes := bytes.Runes(raw)
 	buf := bytes.NewBuffer(make([]byte, 0, 128))
 	buf.WriteString("[]Block{")
-	if isAllPrint(runes) {
-		buf.WriteString(fmt.Sprintf("%q", runeString(runes[:16])))
-		if len(runes) <= 16 {
-			buf.WriteString(", 0...")
-		} else {
-			buf.WriteString("...")
-		}
-	} else {
-		for i := 0; i < 16; i++ {
-			buf.WriteString(fmt.Sprintf("%#02X, ", raw[i]))
-		}
-		if len(raw) <= 16 {
-			buf.WriteString(", 0...")
-		} else {
-			buf.WriteString("...")
-		}
+	for i := 0; i < 16; i++ {
+		buf.WriteString(fmt.Sprintf("%#02x, ", block[i]))
 	}
-	buf.WriteString(fmt.Sprintf(", len=%d+%d}", len(raw), BlockSize-len(raw)))
+	buf.WriteString(fmt.Sprintf("..., len=%d+%d}", len(raw), BlockSize-len(raw)))
 	return buf.String()
 }
 
-// Addr is the "address" (SHAKE-128 hash) of a CAS block.
-type Addr [32]byte
-
-// Parse parses the Addr.String() representation and stores it in this Addr.
-func (addr *Addr) Parse(in string) error {
-	if len(in) != 64 {
-		return AddrParseError{
-			Input: in,
-			Cause: fmt.Errorf("wrong length: expected 64, got %d", len(in)),
+// Verify confirms that expected == actual and returns nil, or else returns an
+// IntegrityError.
+func Verify(expected, actual Addr, block *Block) error {
+	if expected != actual {
+		return IntegrityError{
+			Addr:         expected,
+			CorruptAddr:  actual,
+			CorruptBlock: block,
 		}
 	}
-	raw, err := hex.DecodeString(in)
-	if err != nil {
-		return AddrParseError{
-			Input: in,
-			Cause: err,
-		}
-	}
-	copy(addr[:], raw)
 	return nil
 }
 
-func (addr Addr) GoString() string {
-	return fmt.Sprintf("Addr(%q)", addr.String())
+// IntegrityError is the error returned when Verify fails.
+type IntegrityError struct {
+	Addr         Addr
+	CorruptAddr  Addr
+	CorruptBlock *Block
 }
 
-func (addr Addr) String() string {
-	return hex.EncodeToString(addr[:])
-}
-
-func isAllPrint(rs []rune) bool {
-	for _, r := range rs {
-		if !unicode.IsPrint(r) {
-			return false
-		}
-	}
-	return true
-}
-
-func runeString(rs []rune) string {
-	buf := bytes.NewBuffer(make([]byte, 0, len(rs)))
-	for _, r := range rs {
-		buf.WriteRune(r)
-	}
-	return buf.String()
+func (err IntegrityError) Error() string {
+	return "integrity failure"
 }

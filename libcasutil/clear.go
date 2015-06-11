@@ -11,7 +11,7 @@ import (
 )
 
 const ClearHelpText = `Usage: casutil clear [--shred]
-	Delete all CAS blocks.
+	Removes all CAS blocks.
 `
 
 type ClearFlags struct {
@@ -65,7 +65,7 @@ func ClearCmd(d *Dispatcher, ctx context.Context, args []string, fval interface{
 			fmt.Fprintf(d.Err, "error: %v\n", err)
 			return 1
 		}
-		reply, err := client.Release(ctx, &proto.ReleaseRequest{
+		reply, err := client.Remove(ctx, &proto.RemoveRequest{
 			Addr:  item.Addr,
 			Shred: f.Shred,
 		})
