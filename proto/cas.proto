@@ -14,10 +14,12 @@ service CAS {
 
 message GetRequest {
   string addr = 1;
+  bool no_block = 2;
 }
 
 message GetReply {
   bytes block = 1;
+  bool found = 2;
 }
 
 message PutRequest {

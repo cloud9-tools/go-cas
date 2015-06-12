@@ -37,7 +37,8 @@ var _ grpc.ClientConn
 var _ = proto1.Marshal
 
 type GetRequest struct {
-	Addr string `protobuf:"bytes,1,opt,name=addr" json:"addr,omitempty"`
+	Addr    string `protobuf:"bytes,1,opt,name=addr" json:"addr,omitempty"`
+	NoBlock bool   `protobuf:"varint,2,opt,name=no_block" json:"no_block,omitempty"`
 }
 
 func (m *GetRequest) Reset()         { *m = GetRequest{} }
@@ -46,6 +47,7 @@ func (*GetRequest) ProtoMessage()    {}
 
 type GetReply struct {
 	Block []byte `protobuf:"bytes,1,opt,name=block,proto3" json:"block,omitempty"`
+	Found bool   `protobuf:"varint,2,opt,name=found" json:"found,omitempty"`
 }
 
 func (m *GetReply) Reset()         { *m = GetReply{} }
