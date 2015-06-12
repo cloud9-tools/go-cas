@@ -23,7 +23,7 @@ const maxuint = ^uint(0)
 type server struct {
 	mutex    sync.RWMutex
 	shards   []cacheShard
-	fallback *cas.Client
+	fallback cas.Client
 }
 
 type cacheShard struct {
@@ -43,7 +43,7 @@ type cacheItem struct {
 	index int
 }
 
-func NewServer(fallback *cas.Client, m, n uint) *server {
+func NewServer(fallback cas.Client, m, n uint) *server {
 	numShards := int(m)
 	perShardMax := int(n)
 	s := &server{
@@ -72,24 +72,27 @@ func (s *server) Get(ctx context.Context, in *proto.GetRequest) (*proto.GetReply
 		return nil, err
 	}
 	shard := s.shardFor(addr)
-	var reply *proto.GetReply
+	var out *proto.GetReply
 	var err error
 	locked(&shard.mutex, func() {
 		if item, found := shard.byAddr[addr]; found {
 			// HIT
 			item.bump()
-			reply = &proto.GetReply{Block: shard.storage[item.index][:]}
+			out = &proto.GetReply{Found: true}
+			if !in.NoBlock {
+				out.Block = shard.storage[item.index][:]
+			}
 		} else {
 			// MISS
-			reply, err = s.fallback.Get(ctx, in)
+			out, err = s.fallback.Get(ctx, in)
 			if err != nil {
 				return
 			}
 			shard.evictUnlocked(1)
-			shard.insertUnlocked(addr, reply.Block)
+			shard.insertUnlocked(addr, out.Block)
 		}
 	})
-	return reply, err
+	return out, err
 }
 func (s *server) Put(ctx context.Context, in *proto.PutRequest) (*proto.PutReply, error) {
 	var block cas.Block
@@ -98,10 +101,10 @@ func (s *server) Put(ctx context.Context, in *proto.PutRequest) (*proto.PutReply
 	}
 	addr := block.Addr()
 	shard := s.shardFor(addr)
-	var reply *proto.PutReply
+	var out *proto.PutReply
 	var err error
 	locked(&shard.mutex, func() {
-		reply, err = s.fallback.Put(ctx, in)
+		out, err = s.fallback.Put(ctx, in)
 		if item, found := shard.byAddr[addr]; found {
 			// UPDATE
 			item.bump()
@@ -112,7 +115,7 @@ func (s *server) Put(ctx context.Context, in *proto.PutRequest) (*proto.PutReply
 			shard.insertUnlocked(addr, in.Block)
 		}
 	})
-	return reply, err
+	return out, err
 }
 func (s *server) Remove(ctx context.Context, in *proto.RemoveRequest) (*proto.RemoveReply, error) {
 	var addr cas.Addr
@@ -120,10 +123,10 @@ func (s *server) Remove(ctx context.Context, in *proto.RemoveRequest) (*proto.Re
 		return nil, err
 	}
 	shard := s.shardFor(addr)
-	var reply *proto.RemoveReply
+	var out *proto.RemoveReply
 	var err error
 	locked(&shard.mutex, func() {
-		reply, err = s.fallback.Remove(ctx, in)
+		out, err = s.fallback.Remove(ctx, in)
 		if item, found := shard.byAddr[addr]; found {
 			// DELETE
 			for i, item2 := range shard.heap {
@@ -137,7 +140,7 @@ func (s *server) Remove(ctx context.Context, in *proto.RemoveRequest) (*proto.Re
 			shard.inUse.SetBit(shard.inUse, item.index, 0)
 		}
 	})
-	return reply, err
+	return out, err
 }
 func (s *server) Stat(ctx context.Context, in *proto.StatRequest) (*proto.StatReply, error) {
 	// Not cached

@@ -57,6 +57,9 @@ func (fs NativeFileSystem) OpenForRead(path string, iot IOType) (ReadFile, error
 		if patherr, ok := err.(*os.PathError); ok && patherr.Err == unix.ENOENT {
 			return nil, ErrNotFound
 		}
+		if syserr, ok := err.(*os.SyscallError); ok && syserr.Err == unix.ENOENT {
+			return nil, ErrNotFound
+		}
 		return nil, err
 	}
 	if err := lock(fh, unix.F_RDLCK); err != nil {

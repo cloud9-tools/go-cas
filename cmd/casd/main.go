@@ -21,6 +21,7 @@ import (
 	"github.com/chronos-tachyon/go-multierror"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 )
 
 var ErrUnexpectedEOF = errors.New("unexpected EOF")
@@ -38,14 +39,18 @@ func (s *server) Get(ctx context.Context, in *proto.GetRequest) (*proto.GetReply
 	out := &proto.GetReply{}
 	var addr cas.Addr
 	if err := addr.Parse(in.Addr); err != nil {
-		return nil, err
+		return nil, grpc.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	internal.Debugf("-- begin Get: addr=%q", addr)
 
 	indexFH, backupFH, blockFH, err := s.openForRead(addr)
+	if err == internal.ErrNotFound {
+		internal.Debug("-- end Get: openForRead NotFound OK")
+		return out, nil
+	}
 	if err != nil {
 		internal.Debugf("I/O openForRead err=%v", err)
-		return nil, err
+		return nil, grpc.Errorf(codes.FailedPrecondition, "%v", err)
 	}
 	defer func() {
 		blockFH.Close()
@@ -56,7 +61,7 @@ func (s *server) Get(ctx context.Context, in *proto.GetRequest) (*proto.GetReply
 	_, index, err := loadIndex(indexFH)
 	if err != nil {
 		internal.Debugf("I/O loadIndex err=%v", err)
-		return nil, err
+		return nil, grpc.Errorf(codes.FailedPrecondition, "%v", err)
 	}
 	internal.Debugf("index=%v", index)
 
@@ -80,23 +85,26 @@ func (s *server) Get(ctx context.Context, in *proto.GetRequest) (*proto.GetReply
 		internal.Debugf("I/O loadBlock err=%v", err)
 		return nil, err
 	}
-	out.Block = block[:]
+	out.Found = true
+	if !in.NoBlock {
+		out.Block = block[:]
+	}
 	internal.Debug("-- end Get: present OK")
 	return out, nil
 }
 func (s *server) Put(ctx context.Context, in *proto.PutRequest) (*proto.PutReply, error) {
 	var block cas.Block
 	if err := block.Pad(in.Block); err != nil {
-		return nil, err
+		return nil, grpc.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	addr := block.Addr()
 	if in.Addr != "" {
 		var expected cas.Addr
 		if err := expected.Parse(in.Addr); err != nil {
-			return nil, err
+			return nil, grpc.Errorf(codes.InvalidArgument, "%v", err)
 		}
 		if err := cas.Verify(expected, addr, &block); err != nil {
-			return nil, err
+			return nil, grpc.Errorf(codes.DataLoss, "%v", err)
 		}
 	}
 	internal.Debugf("-- begin Put: addr=%q, block=%#v", addr, block)
