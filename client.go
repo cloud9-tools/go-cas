@@ -14,10 +14,6 @@ type Client interface {
 }
 
 func DialClient(target string, opts ...grpc.DialOption) (Client, error) {
-	if strings.Contains(target, ",") {
-		targets := strings.Split(target, ",")
-		return DialRoundRobinClient(targets, opts...)
-	}
 	return DialSimpleClient(target, opts...)
 }
 
