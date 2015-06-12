@@ -3,7 +3,6 @@ package libcasutil // import "github.com/chronos-tachyon/go-cas/libcasutil"
 import (
 	"bytes"
 	"flag"
-	"fmt"
 	"os"
 
 	"github.com/chronos-tachyon/go-cas"
@@ -43,13 +42,13 @@ func GetCmd(d *Dispatcher, ctx context.Context, args []string, fval interface{})
 		backend = d.Backend
 	}
 	if backend == "" {
-		fmt.Fprintf(d.Err, "error: must specify --backend\n")
+		d.Error("must specify --backend")
 		return 2
 	}
 
 	client, err := cas.DialClient(backend)
 	if err != nil {
-		fmt.Fprintf(d.Err, "error: failed to connect to CAS: %q: %v\n", backend, err)
+		d.Errorf("failed to connect to CAS: %q: %v", backend, err)
 		return 1
 	}
 	defer client.Close()
@@ -57,12 +56,12 @@ func GetCmd(d *Dispatcher, ctx context.Context, args []string, fval interface{})
 	for _, addr := range args {
 		reply, err := client.Get(ctx, &proto.GetRequest{Addr: addr})
 		if err != nil {
-			fmt.Fprintf(d.Err, "error: failed to retrieve CAS block: %q: %v\n", addr, err)
+			d.Errorf("failed to retrieve CAS block: %q: %v", addr, err)
 			return 1
 		}
 		block := reply.Block
 		if block == nil {
-			fmt.Fprintf(d.Err, "info: CAS block %q not found\n", addr)
+			d.Infof("CAS block %q not found", addr)
 			continue
 		}
 		if f.TrimZero {
@@ -70,7 +69,7 @@ func GetCmd(d *Dispatcher, ctx context.Context, args []string, fval interface{})
 		}
 		err = ioutil2.WriteAll(os.Stdout, block)
 		if err != nil {
-			fmt.Fprintf(d.Err, "error: failed to write %q to stdout: %v\n", addr, err)
+			d.Errorf("failed to write %q to stdout: %v", addr, err)
 			return 1
 		}
 	}

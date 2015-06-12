@@ -2,7 +2,6 @@ package libcasutil // import "github.com/chronos-tachyon/go-cas/libcasutil"
 
 import (
 	"flag"
-	"fmt"
 	"io"
 	"regexp"
 
@@ -37,24 +36,24 @@ func GrepCmd(d *Dispatcher, ctx context.Context, args []string, fval interface{}
 		backend = d.Backend
 	}
 	if backend == "" {
-		fmt.Fprintf(d.Err, "error: must specify --backend\n")
+		d.Error("must specify --backend")
 		return 2
 	}
 
 	if len(args) != 1 {
-		fmt.Fprintf(d.Err, "error: grep takes exactly one argument!  got %q\n", args)
+		d.Errorf("grep takes exactly one argument!  got %q", args)
 		return 2
 	}
 
 	re, err := regexp.Compile(args[0])
 	if err != nil {
-		fmt.Fprintf(d.Err, "error: failed to parse regular expression: %v\n", err)
+		d.Errorf("failed to parse regular expression: %v", err)
 		return 2
 	}
 
 	client, err := cas.DialClient(backend)
 	if err != nil {
-		fmt.Fprintf(d.Err, "error: failed to open CAS %q: %v\n", backend, err)
+		d.Errorf("failed to open CAS %q: %v", backend, err)
 		return 1
 	}
 	defer client.Close()
@@ -64,7 +63,7 @@ func GrepCmd(d *Dispatcher, ctx context.Context, args []string, fval interface{}
 		Regexp:     args[0],
 	})
 	if err != nil {
-		fmt.Fprintf(d.Err, "error: %v\n", err)
+		d.Errorf("%v", err)
 		return 1
 	}
 
@@ -74,11 +73,11 @@ func GrepCmd(d *Dispatcher, ctx context.Context, args []string, fval interface{}
 			break
 		}
 		if err != nil {
-			fmt.Fprintf(d.Err, "error: %v\n", err)
+			d.Errorf("%v", err)
 			return 1
 		}
 		if re.Match(item.Block) {
-			fmt.Fprintf(d.Out, "%s\n", item.Addr)
+			d.Printf("%s\n", item.Addr)
 		}
 	}
 	return 0

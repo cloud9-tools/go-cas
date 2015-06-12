@@ -2,7 +2,6 @@ package libcasutil // import "github.com/chronos-tachyon/go-cas/libcasutil"
 
 import (
 	"flag"
-	"fmt"
 
 	"golang.org/x/net/context"
 )
@@ -17,7 +16,7 @@ func HelpAddFlags(_ *flag.FlagSet) interface{} {
 
 func HelpCmd(d *Dispatcher, ctx context.Context, args []string, _ interface{}) int {
 	if len(args) > 1 {
-		fmt.Fprintf(d.Err, "error: help takes zero or one argument!  got %q\n", args)
+		d.Errorf("help takes zero or one argument!  got %q", args)
 		return 2
 	}
 
@@ -34,25 +33,25 @@ func HelpCmd(d *Dispatcher, ctx context.Context, args []string, _ interface{}) i
 		return 0
 	}
 	if topic == "topics" {
-		fmt.Fprintln(d.Out, "Help is available on:")
+		d.Println("Help is available on:")
 		for _, item := range d.Dispatches {
 			category := "[command]"
 			if item.Run == nil {
 				category = "[help topic]"
 			}
-			fmt.Fprintf(d.Out, "\t%-10s %s\n", item.Name, category)
+			d.Printf("\t%-10s %s\n", item.Name, category)
 		}
-		fmt.Fprintf(d.Out, "\t%-10s [help topic]\n", "topics")
-		fmt.Fprintf(d.Out, "\t%-10s [help topic]\n", "all")
+		d.Printf("\t%-10s [help topic]\n", "topics")
+		d.Printf("\t%-10s [help topic]\n", "all")
 		return 0
 	}
 	if topic == "all" {
-		fmt.Fprintln(d.Out, d.GlobalHelp)
+		d.Println(d.GlobalHelp)
 		for _, item := range d.Dispatches {
-			fmt.Fprintln(d.Out, item.Help)
+			d.Println(item.Help)
 		}
 		return 0
 	}
-	fmt.Fprintf(d.Err, "error: unknown topic: %q\n", topic)
+	d.Errorf("unknown topic: %q", topic)
 	return 1
 }

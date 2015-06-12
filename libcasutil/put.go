@@ -2,7 +2,6 @@ package libcasutil // import "github.com/chronos-tachyon/go-cas/libcasutil"
 
 import (
 	"flag"
-	"fmt"
 	"io/ioutil"
 	"os"
 	"strings"
@@ -38,13 +37,13 @@ func PutCmd(d *Dispatcher, ctx context.Context, args []string, fval interface{})
 		backend = d.Backend
 	}
 	if backend == "" {
-		fmt.Fprintf(d.Err, "error: must specify --backend\n")
+		d.Error("must specify --backend")
 		return 2
 	}
 
 	client, err := cas.DialClient(backend)
 	if err != nil {
-		fmt.Fprintf(d.Err, "error: failed to open CAS %q: %v\n", backend, err)
+		d.Errorf("failed to open CAS %q: %v", backend, err)
 		return 1
 	}
 
@@ -58,7 +57,7 @@ func PutCmd(d *Dispatcher, ctx context.Context, args []string, fval interface{})
 		if arg == "-" || arg == "/dev/stdin" {
 			data, err = ioutil.ReadAll(os.Stdin)
 			if err != nil {
-				fmt.Fprintf(d.Err, "error: failed to read contents from stdin: %v\n", err)
+				d.Errorf("failed to read contents from stdin: %v", err)
 				return 3
 			}
 		} else if strings.HasPrefix(arg, "<<<") {
@@ -66,16 +65,16 @@ func PutCmd(d *Dispatcher, ctx context.Context, args []string, fval interface{})
 		} else {
 			data, err = ioutil.ReadFile(arg)
 			if err != nil {
-				fmt.Fprintf(d.Err, "error: failed to read contents from %q: %v\n", arg, err)
+				d.Errorf("failed to read contents from %q: %v", arg, err)
 				return 3
 			}
 		}
 		reply, err := client.Put(ctx, &proto.PutRequest{Block: data})
 		if err != nil {
-			fmt.Fprintf(d.Err, "error: failed to put CAS block: %v\n", err)
+			d.Errorf("failed to put CAS block: %v", err)
 			return 1
 		}
-		fmt.Fprintf(d.Out, "%s inserted=%t\n", reply.Addr, reply.Inserted)
+		d.Printf("%s\tinserted=%t\n", reply.Addr, reply.Inserted)
 	}
 
 	return 0

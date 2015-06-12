@@ -2,7 +2,6 @@ package libcasutil // import "github.com/chronos-tachyon/go-cas/libcasutil"
 
 import (
 	"flag"
-	"fmt"
 	"io"
 
 	"github.com/chronos-tachyon/go-cas"
@@ -35,24 +34,24 @@ func LsCmd(d *Dispatcher, ctx context.Context, args []string, fval interface{}) 
 		backend = d.Backend
 	}
 	if backend == "" {
-		fmt.Fprintf(d.Err, "error: must specify --backend\n")
+		d.Error("must specify --backend")
 		return 2
 	}
 
 	if len(args) > 0 {
-		fmt.Fprintf(d.Err, "error: ls doesn't take arguments!  got %q\n", args)
+		d.Errorf("ls doesn't take arguments!  got %q", args)
 		return 2
 	}
 
 	client, err := cas.DialClient(backend)
 	if err != nil {
-		fmt.Fprintf(d.Err, "error: failed to open CAS %q: %v\n", backend, err)
+		d.Errorf("failed to open CAS %q: %v", backend, err)
 		return 1
 	}
 
 	stream, err := client.Walk(ctx, &proto.WalkRequest{})
 	if err != nil {
-		fmt.Fprintf(d.Err, "error: %v\n", err)
+		d.Errorf("%v", err)
 		return 1
 	}
 	eol := "\n"
@@ -65,10 +64,10 @@ func LsCmd(d *Dispatcher, ctx context.Context, args []string, fval interface{}) 
 			break
 		}
 		if err != nil {
-			fmt.Fprintf(d.Err, "error: %v\n", err)
+			d.Errorf("%v", err)
 			return 1
 		}
-		fmt.Fprintf(d.Out, "%s%s", item.Addr, eol)
+		d.Printf("%s%s", item.Addr, eol)
 	}
 	return 0
 }

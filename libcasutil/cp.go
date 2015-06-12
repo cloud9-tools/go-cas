@@ -2,7 +2,6 @@ package libcasutil // import "github.com/chronos-tachyon/go-cas/libcasutil"
 
 import (
 	"flag"
-	"fmt"
 
 	"github.com/chronos-tachyon/go-cas"
 	"github.com/chronos-tachyon/go-cas/proto"
@@ -35,7 +34,7 @@ func CpCmd(d *Dispatcher, ctx context.Context, args []string, fval interface{}) 
 		backend = d.Backend
 	}
 	if backend == "" {
-		fmt.Fprintf(d.Err, "error: must specify --backend\n")
+		d.Error("must specify --backend")
 		return 2
 	}
 
@@ -44,20 +43,20 @@ func CpCmd(d *Dispatcher, ctx context.Context, args []string, fval interface{}) 
 		source = d.Source
 	}
 	if source == "" {
-		fmt.Fprintf(d.Err, "error: must specify --source\n")
+		d.Error("must specify --source")
 		return 2
 	}
 
 	dstClient, err := cas.DialClient(backend)
 	if err != nil {
-		fmt.Fprintf(d.Err, "error: failed to connect to dst CAS: %q: %v\n", backend, err)
+		d.Errorf("failed to connect to dst CAS: %q: %v", backend, err)
 		return 1
 	}
 	defer dstClient.Close()
 
 	srcClient, err := cas.DialClient(source)
 	if err != nil {
-		fmt.Fprintf(d.Err, "error: failed to connect to src CAS: %q: %v\n", source, err)
+		d.Errorf("failed to connect to src CAS: %q: %v", source, err)
 		return 1
 	}
 	defer srcClient.Close()
@@ -65,17 +64,17 @@ func CpCmd(d *Dispatcher, ctx context.Context, args []string, fval interface{}) 
 	for _, addr := range args {
 		reply, err := srcClient.Get(ctx, &proto.GetRequest{Addr: addr})
 		if err != nil {
-			fmt.Fprintf(d.Err, "error: failed to get CAS block: %v\n", err)
+			d.Errorf("failed to get CAS block: %v", err)
 			return 1
 		}
 
 		reply2, err := dstClient.Put(ctx, &proto.PutRequest{Addr: addr, Block: reply.Block})
 		if err != nil {
-			fmt.Fprintf(d.Err, "error: failed to put CAS block: %v\n", err)
+			d.Errorf("failed to put CAS block: %v", err)
 			return 1
 		}
 
-		fmt.Fprintf(d.Out, "%s inserted=%t\n", addr, reply2.Inserted)
+		d.Printf("%s\tinserted=%t\n", addr, reply2.Inserted)
 	}
 	return 0
 }

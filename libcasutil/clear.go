@@ -2,7 +2,6 @@ package libcasutil // import "github.com/chronos-tachyon/go-cas/libcasutil"
 
 import (
 	"flag"
-	"fmt"
 	"io"
 
 	"github.com/chronos-tachyon/go-cas"
@@ -35,24 +34,24 @@ func ClearCmd(d *Dispatcher, ctx context.Context, args []string, fval interface{
 		backend = d.Backend
 	}
 	if backend == "" {
-		fmt.Fprintf(d.Err, "error: must specify --backend\n")
+		d.Error("must specify --backend")
 		return 2
 	}
 
 	if len(args) > 0 {
-		fmt.Fprintf(d.Err, "error: clear doesn't take arguments!  got %q\n", args)
+		d.Errorf("clear doesn't take arguments!  got %q", args)
 		return 2
 	}
 
 	client, err := cas.DialClient(backend)
 	if err != nil {
-		fmt.Fprintf(d.Err, "error: failed to open CAS %q: %v\n", backend, err)
+		d.Errorf("failed to open CAS %q: %v", backend, err)
 		return 1
 	}
 
 	stream, err := client.Walk(ctx, &proto.WalkRequest{})
 	if err != nil {
-		fmt.Fprintf(d.Err, "error: %v\n", err)
+		d.Errorf("%v", err)
 		return 1
 	}
 	ret := 0
@@ -62,7 +61,7 @@ func ClearCmd(d *Dispatcher, ctx context.Context, args []string, fval interface{
 			break
 		}
 		if err != nil {
-			fmt.Fprintf(d.Err, "error: %v\n", err)
+			d.Errorf("%v", err)
 			return 1
 		}
 		reply, err := client.Remove(ctx, &proto.RemoveRequest{
@@ -70,11 +69,11 @@ func ClearCmd(d *Dispatcher, ctx context.Context, args []string, fval interface{
 			Shred: f.Shred,
 		})
 		if err != nil {
-			fmt.Fprintf(d.Err, "error: failed to release CAS block: %q: %v\n", item.Addr, err)
+			d.Errorf("failed to release CAS block: %q: %v", item.Addr, err)
 			ret = 1
 			continue
 		}
-		fmt.Fprintf(d.Out, "%s deleted=%t\n", item.Addr, reply.Deleted)
+		d.Printf("%s\tdeleted=%t\n", item.Addr, reply.Deleted)
 	}
 	return ret
 }

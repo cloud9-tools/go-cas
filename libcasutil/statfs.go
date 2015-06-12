@@ -2,7 +2,6 @@ package libcasutil // import "github.com/chronos-tachyon/go-cas/libcasutil"
 
 import (
 	"flag"
-	"fmt"
 
 	"github.com/chronos-tachyon/go-cas"
 	"github.com/chronos-tachyon/go-cas/proto"
@@ -33,33 +32,33 @@ func StatfsCmd(d *Dispatcher, ctx context.Context, args []string, fval interface
 		backend = d.Backend
 	}
 	if backend == "" {
-		fmt.Fprintf(d.Err, "error: must specify --backend\n")
+		d.Error("must specify --backend")
 		return 2
 	}
 
 	if len(args) != 0 {
-		fmt.Fprintf(d.Err, "error: statfs takes exactly zero arguments!  got %q\n", args)
+		d.Errorf("statfs takes exactly zero arguments!  got %q", args)
 		return 2
 	}
 
 	client, err := cas.DialClient(backend)
 	if err != nil {
-		fmt.Fprintf(d.Err, "error: failed to open CAS %q: %v\n", backend, err)
+		d.Errorf("failed to open CAS %q: %v", backend, err)
 		return 1
 	}
 
 	reply, err := client.Stat(ctx, &proto.StatRequest{})
 	if err != nil {
-		fmt.Fprintf(d.Err, "error: %v\n", err)
+		d.Errorf("%v", err)
 		return 1
 	}
 
 	total := reply.BlocksFree + reply.BlocksUsed
-	fmt.Fprintf(d.Out, "blocks_free=%d\n", reply.BlocksFree)
-	fmt.Fprintf(d.Out, "blocks_used=%d\n", reply.BlocksUsed)
-	fmt.Fprintf(d.Out, "blocks_total=%d\n", total)
-	fmt.Fprintf(d.Out, "bytes_free=%d\n", reply.BlocksFree*cas.BlockSize)
-	fmt.Fprintf(d.Out, "bytes_used=%d\n", reply.BlocksUsed*cas.BlockSize)
-	fmt.Fprintf(d.Out, "bytes_total=%d\n", total*cas.BlockSize)
+	d.Printf("blocks_free=%d\n", reply.BlocksFree)
+	d.Printf("blocks_used=%d\n", reply.BlocksUsed)
+	d.Printf("blocks_total=%d\n", total)
+	d.Printf("bytes_free=%d\n", reply.BlocksFree*cas.BlockSize)
+	d.Printf("bytes_used=%d\n", reply.BlocksUsed*cas.BlockSize)
+	d.Printf("bytes_total=%d\n", total*cas.BlockSize)
 	return 0
 }

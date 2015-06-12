@@ -2,7 +2,6 @@ package libcasutil // import "github.com/chronos-tachyon/go-cas/libcasutil"
 
 import (
 	"flag"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
@@ -40,25 +39,25 @@ func ScriptCmd(d *Dispatcher, ctx context.Context, args []string, fval interface
 			var err error
 			fh, err = os.Open(arg)
 			if err != nil {
-				fmt.Fprintf(d.Err, "error: %v\n", err)
+				d.Errorf("%v", err)
 				return 3
 			}
 		}
 		script, err := script.Parse(fh)
 		fh.Close()
 		if err != nil {
-			fmt.Fprintf(d.Err, "error: %v\n", err)
+			d.Errorf("%v", err)
 			return 3
 		}
 		scripts = append(scripts, script...)
 	}
 	for _, line := range scripts {
 		if f.Trace {
-			fmt.Fprintf(d.Err, "+ %s\n", strings.Join(line, " "))
+			d.Printerrf("+ %s\n", strings.Join(line, " "))
 		}
 		rc := d.Dispatch(line)
 		if f.Trace {
-			fmt.Fprintf(d.Err, "? %d\n", rc)
+			d.Printerrf("? %d\n", rc)
 		}
 		if rc != 0 {
 			return rc

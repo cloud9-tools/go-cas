@@ -2,7 +2,6 @@ package libcasutil // import "github.com/chronos-tachyon/go-cas/libcasutil"
 
 import (
 	"flag"
-	"fmt"
 
 	"github.com/chronos-tachyon/go-cas"
 	"github.com/chronos-tachyon/go-cas/proto"
@@ -35,13 +34,13 @@ func RmCmd(d *Dispatcher, ctx context.Context, args []string, fval interface{}) 
 		backend = d.Backend
 	}
 	if backend == "" {
-		fmt.Fprintf(d.Err, "error: must specify --backend\n")
+		d.Error("must specify --backend")
 		return 2
 	}
 
 	client, err := cas.DialClient(backend)
 	if err != nil {
-		fmt.Fprintf(d.Err, "error: failed to open CAS %q: %v\n", backend, err)
+		d.Errorf("failed to open CAS %q: %v", backend, err)
 		return 1
 	}
 	defer client.Close()
@@ -53,11 +52,11 @@ func RmCmd(d *Dispatcher, ctx context.Context, args []string, fval interface{}) 
 			Shred: f.Shred,
 		})
 		if err != nil {
-			fmt.Fprintf(d.Err, "error: failed to release CAS block: %q: %v\n", addr, err)
+			d.Errorf("failed to release CAS block: %q: %v", addr, err)
 			ret = 1
 			continue
 		}
-		fmt.Fprintf(d.Out, "%s deleted=%t\n", addr, reply.Deleted)
+		d.Printf("%s\tdeleted=%t\n", addr, reply.Deleted)
 	}
 	return ret
 }

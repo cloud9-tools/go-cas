@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"golang.org/x/net/context"
+	"github.com/chronos-tachyon/go-cas/internal"
 )
 
 type Dispatcher struct {
@@ -57,6 +58,42 @@ func NewDispatcher(help string) *Dispatcher {
 	d.AddAlias("stat", "statfs")
 	return d
 }
+
+func (d *Dispatcher) wout(data []byte) {
+	if err := internal.WriteExactly(d.Out, data); err != nil {
+		panic(err)
+	}
+}
+func (d *Dispatcher) werr(data []byte) {
+	if err := internal.WriteExactly(d.Err, data); err != nil {
+		panic(err)
+	}
+}
+
+func (d *Dispatcher) woutstr(str string) { d.wout([]byte(str)) }
+func (d *Dispatcher) werrstr(str string) { d.werr([]byte(str)) }
+
+func (d *Dispatcher) Print(a ...interface{})                 { d.woutstr(fmt.Sprint(a...)) }
+func (d *Dispatcher) Println(a ...interface{})               { d.woutstr(fmt.Sprintln(a...)) }
+func (d *Dispatcher) Printf(format string, a ...interface{}) { d.woutstr(fmt.Sprintf(format, a...)) }
+
+func (d *Dispatcher) Printerr(a ...interface{})                 { d.werrstr(fmt.Sprint(a...)) }
+func (d *Dispatcher) Printerrln(a ...interface{})               { d.werrstr(fmt.Sprintln(a...)) }
+func (d *Dispatcher) Printerrf(format string, a ...interface{}) { d.werrstr(fmt.Sprintf(format, a...)) }
+
+func (d *Dispatcher) log(prefix string, a ...interface{}) {
+	d.werrstr(prefix + fmt.Sprint(a...) + "\n")
+}
+func (d *Dispatcher) logf(prefix, format string, a ...interface{}) {
+	d.werrstr(prefix + fmt.Sprintf(format, a...) + "\n")
+}
+
+func (d *Dispatcher) Info(a ...interface{})                    { d.log("info: ", a...) }
+func (d *Dispatcher) Infof(format string, a ...interface{})    { d.logf("info: ", format, a...) }
+func (d *Dispatcher) Warning(a ...interface{})                 { d.log("warn: ", a...) }
+func (d *Dispatcher) Warningf(format string, a ...interface{}) { d.logf("warn: ", format, a...) }
+func (d *Dispatcher) Error(a ...interface{})                   { d.log("error: ", a...) }
+func (d *Dispatcher) Errorf(format string, a ...interface{})   { d.logf("error: ", format, a...) }
 
 func (d *Dispatcher) makeUsage(fs *flag.FlagSet, help string, ok bool) func() {
 	return func() {
@@ -132,7 +169,7 @@ func (d *Dispatcher) Dispatch(args []string) int {
 		}
 		fs, fval := d.makeFlagSet(item.Name, item.Help, item.AddFlags, false)
 		if err := fs.Parse(args); err != nil {
-			fmt.Fprintf(d.Err, "error: %v\n", err)
+			d.Error("%v", err)
 			return 2
 		}
 		args = fs.Args()
@@ -142,6 +179,6 @@ func (d *Dispatcher) Dispatch(args []string) int {
 		}
 		return item.Run(d, ctx, args, fval)
 	}
-	fmt.Fprintf(d.Err, "error: unknown subcommand: %q\n", cmd)
+	d.Errorf("unknown subcommand: %q\n", cmd)
 	return 2
 }
