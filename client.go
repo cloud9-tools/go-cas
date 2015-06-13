@@ -2,7 +2,6 @@ package cas // import "github.com/chronos-tachyon/go-cas"
 
 import (
 	"io"
-	"strings"
 
 	"github.com/chronos-tachyon/go-cas/proto"
 	"google.golang.org/grpc"
