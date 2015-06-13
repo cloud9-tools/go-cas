@@ -7,8 +7,8 @@ import (
 	"os"
 	"time"
 
-	"golang.org/x/net/context"
 	"github.com/chronos-tachyon/go-cas/internal"
+	"golang.org/x/net/context"
 )
 
 type Dispatcher struct {
@@ -84,16 +84,16 @@ func (d *Dispatcher) Printerrf(format string, a ...interface{}) { d.werrstr(fmt.
 func (d *Dispatcher) log(prefix string, a ...interface{}) {
 	d.werrstr(prefix + fmt.Sprint(a...) + "\n")
 }
-func (d *Dispatcher) logf(prefix, format string, a ...interface{}) {
+func (d *Dispatcher) logf(format, prefix string, a ...interface{}) {
 	d.werrstr(prefix + fmt.Sprintf(format, a...) + "\n")
 }
 
 func (d *Dispatcher) Info(a ...interface{})                    { d.log("info: ", a...) }
-func (d *Dispatcher) Infof(format string, a ...interface{})    { d.logf("info: ", format, a...) }
+func (d *Dispatcher) Infof(format string, a ...interface{})    { d.logf(format, "info: ", a...) }
 func (d *Dispatcher) Warning(a ...interface{})                 { d.log("warn: ", a...) }
-func (d *Dispatcher) Warningf(format string, a ...interface{}) { d.logf("warn: ", format, a...) }
+func (d *Dispatcher) Warningf(format string, a ...interface{}) { d.logf(format, "warn: ", a...) }
 func (d *Dispatcher) Error(a ...interface{})                   { d.log("error: ", a...) }
-func (d *Dispatcher) Errorf(format string, a ...interface{})   { d.logf("error: ", format, a...) }
+func (d *Dispatcher) Errorf(format string, a ...interface{})   { d.logf(format, "error: ", a...) }
 
 func (d *Dispatcher) makeUsage(fs *flag.FlagSet, help string, ok bool) func() {
 	return func() {
@@ -169,7 +169,7 @@ func (d *Dispatcher) Dispatch(args []string) int {
 		}
 		fs, fval := d.makeFlagSet(item.Name, item.Help, item.AddFlags, false)
 		if err := fs.Parse(args); err != nil {
-			d.Error("%v", err)
+			d.Errorf("%v", err)
 			return 2
 		}
 		args = fs.Args()

@@ -721,7 +721,7 @@ func main() {
 	}
 	s := grpc.NewServer()
 	proto.RegisterCASServer(s, &server{
-		fs:           internal.NativeFileSystem{dirFlag},
+		fs:           internal.NativeFileSystem{Dir: dirFlag},
 		limit:        limitFlag,
 		treeDepth:    4,
 		maxSlotsLog2: 16,
