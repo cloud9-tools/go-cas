@@ -22,7 +22,7 @@ func (s *Server) Put(ctx context.Context, in *proto.PutRequest) (out *proto.PutR
 		if err = expected.Parse(in.Addr); err != nil {
 			return nil, grpc.Errorf(codes.InvalidArgument, "%v", err)
 		}
-		if err = cas.Verify(expected, addr, &block); err != nil {
+		if err = cas.Verify(expected, addr); err != nil {
 			return nil, grpc.Errorf(codes.DataLoss, "%v", err)
 		}
 	}

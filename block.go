@@ -53,24 +53,24 @@ func (block *Block) WriteToAt(w io.WriterAt, offset int64) error {
 }
 
 // Addr hashes this CAS block to compute its address.
-func (block Block) Addr() Addr {
-	addr := Addr{}
+func (block *Block) Addr() Addr {
+	addr := &Addr{}
 	shake128 := sha3.NewShake128()
 	shake128.Write(block[:])
 	shake128.Read(addr[:])
-	return addr
+	return *addr
 }
 
 // Trim returns the contents of this CAS block with trailing zeroes removed.
-func (block Block) Trim() []byte {
+func (block *Block) Trim() []byte {
 	return bytes.TrimRight(block[:], "\x00")
 }
 
-func (block Block) GoString() string {
+func (block *Block) GoString() string {
 	return block.String()
 }
 
-func (block Block) String() string {
+func (block *Block) String() string {
 	raw := block.Trim()
 	buf := bytes.NewBuffer(make([]byte, 0, 128))
 	buf.WriteString("[]Block{")
@@ -81,26 +81,13 @@ func (block Block) String() string {
 	return buf.String()
 }
 
-// Verify confirms that expected == actual and returns nil, or else returns an
-// IntegrityError.
-func Verify(expected, actual Addr, block *Block) error {
+// Verify confirms that expected == actual, or else returns an error.
+func Verify(expected, actual Addr) error {
 	if expected != actual {
-		return IntegrityError{
-			Addr:         expected,
-			CorruptAddr:  actual,
-			CorruptBlock: block,
-		}
+		return fmt.Errorf(
+			"SHAKE128 hash integrity error: expected CAS block "+
+				"to hash to %q, but actually hashed to %q",
+			expected, actual)
 	}
 	return nil
-}
-
-// IntegrityError is the error returned when Verify fails.
-type IntegrityError struct {
-	Addr         Addr
-	CorruptAddr  Addr
-	CorruptBlock *Block
-}
-
-func (err IntegrityError) Error() string {
-	return "integrity failure"
 }
