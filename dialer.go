@@ -9,21 +9,19 @@ import (
 )
 
 var ErrBadDialSpec = errors.New("bad dial spec; must start with 'tcp:' or 'unix:'")
-var dialSpecRE = regexp.MustCompile(`^(tcp[46]|unix):(.*)$`)
+var dialSpecRE = regexp.MustCompile(`^(unix|tcp[46]?):(.*)$`)
 
 func ParseDialSpec(in string) (network string, address string, err error) {
 	match := dialSpecRE.FindStringSubmatch(in)
 	if match == nil {
-		return "", "", ErrBadDialSpec
+		err = ErrBadDialSpec
+		return
 	}
-	if match[1] == "unix" {
-		path := match[2]
-		if strings.HasPrefix(in, "@") {
-			path = "\x00" + path[1:]
-		}
-		return "unix", path, nil
+	network, address = match[1], match[2]
+	if network == "unix" && strings.HasPrefix(address, "@") {
+		address = "\x00" + address[1:]
 	}
-	return match[1], match[2], nil
+	return
 }
 
 func Dialer(addr string, timeout time.Duration) (net.Conn, error) {

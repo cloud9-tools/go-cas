@@ -4,11 +4,8 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"io"
 
 	"golang.org/x/crypto/sha3"
-
-	"github.com/chronos-tachyon/go-cas/internal"
 )
 
 var ErrBlockTooLong = errors.New("CAS block is too long")
@@ -32,6 +29,10 @@ func (block *Block) Clear() {
 	*block = Block{}
 }
 
+func (block *Block) IsZero() bool {
+	return *block == Block{}
+}
+
 // Pad sets this CAS block to the given data, padding with zeroes as needed.
 func (block *Block) Pad(raw []byte) error {
 	if len(raw) > BlockSize {
@@ -40,16 +41,6 @@ func (block *Block) Pad(raw []byte) error {
 	block.Clear()
 	copy(block[:len(raw)], raw)
 	return nil
-}
-
-// ReadFromAt reads a CAS block from the given file at the given offset.
-func (block *Block) ReadFromAt(r io.ReaderAt, offset int64) error {
-	return internal.ReadExactlyAt(r, block[:], offset)
-}
-
-// WriteToAt writes this CAS block to the given file at the given offset.
-func (block *Block) WriteToAt(w io.WriterAt, offset int64) error {
-	return internal.WriteExactlyAt(w, block[:], offset)
 }
 
 // Addr hashes this CAS block to compute its address.
@@ -67,27 +58,34 @@ func (block *Block) Trim() []byte {
 }
 
 func (block *Block) GoString() string {
-	return block.String()
+	return "cas.Block" + block.String()
 }
 
 func (block *Block) String() string {
 	raw := block.Trim()
 	buf := bytes.NewBuffer(make([]byte, 0, 128))
-	buf.WriteString("[]Block{")
-	for i := 0; i < 16; i++ {
-		buf.WriteString(fmt.Sprintf("%#02x, ", block[i]))
+	buf.WriteString("{")
+	if len(raw) <= 8 {
+		for _, b := range raw {
+			fmt.Fprintf(buf, "%#02x, ", b)
+		}
+	} else {
+		for i := 0; i < 8; i++ {
+			fmt.Fprintf(buf, "%#02x, ", raw[i])
+		}
+		buf.WriteString("..., ")
 	}
-	buf.WriteString(fmt.Sprintf("..., len=%d+%d}", len(raw), BlockSize-len(raw)))
+	fmt.Fprintf(buf, "len=%d}", len(raw))
 	return buf.String()
 }
+
+const verifyFailureFmt = "SHAKE128 hash integrity error: expected CAS block " +
+	"to hash to %q, but actually hashed to %q"
 
 // Verify confirms that expected == actual, or else returns an error.
 func Verify(expected, actual Addr) error {
 	if expected != actual {
-		return fmt.Errorf(
-			"SHAKE128 hash integrity error: expected CAS block "+
-				"to hash to %q, but actually hashed to %q",
-			expected, actual)
+		return fmt.Errorf(verifyFailureFmt, expected, actual)
 	}
 	return nil
 }

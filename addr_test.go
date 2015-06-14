@@ -10,24 +10,34 @@ func TestAddr_Parse(t *testing.T) {
 	type success struct {
 		In       string
 		Expected Addr
+		IsZero   bool
 	}
 	for i, row := range []success{
 		success{"0000000000000000000000000000000000000000000000000000000000000000",
-			Addr{}},
+			Addr{},
+			true},
 		success{"000102030405060708090a0b0c0d0e0ff0f1f2f3f4f5f6f7f8f9fafbfcfdfeff",
 			Addr{0, 1, 2, 3, 4, 5, 6, 7,
 				8, 9, 10, 11, 12, 13, 14, 15,
 				240, 241, 242, 243, 244, 245, 246, 247,
-				248, 249, 250, 251, 252, 253, 254, 255}},
+				248, 249, 250, 251, 252, 253, 254, 255},
+			false},
 	} {
 		var addr Addr
 		err := addr.Parse(row.In)
 		if err != nil {
 			t.Errorf("[%2d] expected %v, got err=%#v", i, row.Expected, err)
-		} else if addr != row.Expected {
+			continue
+		}
+		if addr != row.Expected {
 			t.Errorf("[%2d] %q: expected %v, got %v", i, row.In, row.Expected, addr)
-		} else if addr.String() != row.In {
-			t.Errorf("[%2d] %q != %q", i, row.In, addr)
+			continue
+		}
+		if addr.String() != row.In {
+			t.Errorf("[%2d] String: %q != %q", i, row.In, addr)
+		}
+		if addr.IsZero() != row.IsZero {
+			t.Errorf("[%2d] IsZero: %q != %q", i, row.IsZero, addr.IsZero())
 		}
 	}
 	type failure struct {
@@ -77,13 +87,13 @@ func TestAddr_Cmp(t *testing.T) {
 		pair{Addr{1, 1}, Addr{1, 0}, internal.GreaterThan},
 		pair{Addr{1, 1}, Addr{1, 1}, internal.EqualTo},
 	} {
-		c1 := row.A.Cmp(row.B)
-		c2 := -row.B.Cmp(row.A)
-		if c1 != c2 {
-			t.Errorf("[%2d] %v != %v", i, c1, c2)
+		cmpActual0 := row.A.Cmp(row.B)
+		cmpActual1 := -row.B.Cmp(row.A)
+		if cmpActual0 != row.C {
+			t.Errorf("[%2d] %v != %v", i, row.C, cmpActual0)
 		}
-		if c1 != row.C {
-			t.Errorf("[%2d] %v != %v", i, c1, row.C)
+		if cmpActual1 != row.C {
+			t.Errorf("[%2d] %v != %v", i, row.C, cmpActual1)
 		}
 	}
 	list := []Addr{
@@ -99,22 +109,49 @@ func TestAddr_Cmp(t *testing.T) {
 	}
 	for i := range list {
 		for j := range list {
-			var c0, c1, c2 internal.Comparison
+			var cmpExpect internal.Comparison
+			var lessExpect0, lessExpect1 bool
 			if i < j {
-				c0 = internal.LessThan
+				cmpExpect = internal.LessThan
+				lessExpect0 = true
+				lessExpect1 = false
 			} else if i == j {
-				c0 = internal.EqualTo
+				cmpExpect = internal.EqualTo
+				lessExpect0 = false
+				lessExpect1 = false
 			} else {
-				c0 = internal.GreaterThan
+				cmpExpect = internal.GreaterThan
+				lessExpect0 = false
+				lessExpect1 = true
 			}
-			c1 = list[i].Cmp(list[j])
-			c2 = -list[j].Cmp(list[i])
-			if c0 != c1 {
-				t.Errorf("%d×%d: %v != %v", i, j, c0, c1)
+			cmpActual0 := list[i].Cmp(list[j])
+			cmpActual1 := -list[j].Cmp(list[i])
+			lessActual0 := list[i].Less(list[j])
+			lessActual1 := list[j].Less(list[i])
+			if cmpExpect != cmpActual0 {
+				t.Errorf("%d×%d: Cmp(a,b): %v != %v", i, j, cmpExpect, cmpActual0)
 			}
-			if c0 != c2 {
-				t.Errorf("%d×%d: %v != %v", i, j, c0, c2)
+			if cmpExpect != cmpActual1 {
+				t.Errorf("%d×%d: -Cmp(b,a): %v != %v", i, j, cmpExpect, cmpActual1)
+			}
+			if lessExpect0 != lessActual0 {
+				t.Errorf("%d×%d: Less(a,b): %v != %v", i, j, lessExpect0, lessActual0)
+			}
+			if lessExpect1 != lessActual1 {
+				t.Errorf("%d×%d: Less(b,a): %v != %v", i, j, lessExpect1, lessActual1)
 			}
 		}
+	}
+}
+
+func TestAddr_GoString(t *testing.T) {
+	addr := Addr{0, 1, 2, 3, 4, 5, 6, 7,
+		8, 9, 10, 11, 12, 13, 14, 15,
+		240, 241, 242, 243, 244, 245, 246, 247,
+		248, 249, 250, 251, 252, 253, 254, 255}
+	actual := addr.GoString()
+	expect := `cas.Addr("000102030405060708090a0b0c0d0e0ff0f1f2f3f4f5f6f7f8f9fafbfcfdfeff")`
+	if actual != expect {
+		t.Errorf("GoString: %q != %q", expect, actual)
 	}
 }
