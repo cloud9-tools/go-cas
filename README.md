@@ -2,6 +2,7 @@
 A Content-Addressable Storage layer for Go.
 
 [![godoc](https://chronos-tachyon.net/img/godoc-badge.svg)](https://godoc.org/github.com/chronos-tachyon/go-cas)
+[![Build Status](https://travis-ci.org/chronos-tachyon/go-cas.svg)](https://travis-ci.org/chronos-tachyon/go-cas)
 
 This is an *EARLY BETA*.  It mostly kinda works, but there are few tests,
 there is no distributed storage, there's no proper locality caching, and
