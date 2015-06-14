@@ -6,8 +6,8 @@ import (
 	"os"
 
 	"github.com/chronos-tachyon/go-cas"
+	"github.com/chronos-tachyon/go-cas/internal"
 	"github.com/chronos-tachyon/go-cas/proto"
-	"github.com/chronos-tachyon/go-ioutil2"
 	"golang.org/x/net/context"
 )
 
@@ -67,7 +67,7 @@ func GetCmd(d *Dispatcher, ctx context.Context, args []string, fval interface{})
 		if f.TrimZero {
 			block = bytes.TrimRight(block, "\x00")
 		}
-		err = ioutil2.WriteAll(os.Stdout, block)
+		err = internal.WriteExactly(os.Stdout, block)
 		if err != nil {
 			d.Errorf("failed to write %q to stdout: %v", addr, err)
 			return 1
