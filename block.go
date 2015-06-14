@@ -81,15 +81,6 @@ func (block Block) String() string {
 	return buf.String()
 }
 
-func PaddedBlock(raw []byte) (*Block, error) {
-	block := &Block{}
-	err := block.Pad(raw)
-	if err != nil {
-		return nil, err
-	}
-	return block, nil
-}
-
 // Verify confirms that expected == actual and returns nil, or else returns an
 // IntegrityError.
 func Verify(expected, actual Addr, block *Block) error {

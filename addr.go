@@ -65,19 +65,11 @@ func (a Addr) Less(b Addr) bool {
 }
 
 func (addr Addr) GoString() string {
-	return fmt.Sprintf("cas.ParseAddr(%q)", addr.String())
+	return fmt.Sprintf("cas.Addr(%q)", addr.String())
 }
 
 func (addr Addr) String() string {
 	return hex.EncodeToString(addr[:])
-}
-
-func ParseAddr(in string) (Addr, error) {
-	addr := Addr{}
-	if err := addr.Parse(in); err != nil {
-		return addr, err
-	}
-	return addr, nil
 }
 
 // AddrParseError is the error returned when Addr.Parse fails.
