@@ -54,7 +54,7 @@ func (block *Block) WriteToAt(w io.WriterAt, offset int64) error {
 
 // Addr hashes this CAS block to compute its address.
 func (block Block) Addr() Addr {
-	var addr Addr
+	addr := Addr{}
 	shake128 := sha3.NewShake128()
 	shake128.Write(block[:])
 	shake128.Read(addr[:])
@@ -79,6 +79,15 @@ func (block Block) String() string {
 	}
 	buf.WriteString(fmt.Sprintf("..., len=%d+%d}", len(raw), BlockSize-len(raw)))
 	return buf.String()
+}
+
+func PaddedBlock(raw []byte) (*Block, error) {
+	block := &Block{}
+	err := block.Pad(raw)
+	if err != nil {
+		return nil, err
+	}
+	return block, nil
 }
 
 // Verify confirms that expected == actual and returns nil, or else returns an

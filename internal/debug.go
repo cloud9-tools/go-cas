@@ -5,6 +5,8 @@ import (
 	"log"
 )
 
+const DebugEnabled = true
+
 func Debug(a ...interface{}) {
 	if DebugEnabled {
 		log.Print("debug: ", fmt.Sprint(a...))

@@ -1,5 +1,7 @@
 package cas // import "github.com/chronos-tachyon/go-cas"
 
+//go:generate stringer -type=Comparison
+
 import (
 	"encoding/hex"
 	"fmt"
@@ -37,25 +39,45 @@ func (addr Addr) IsZero() bool {
 	return addr == Addr{}
 }
 
-// Less returns true iff this Addr is lexically before the given Addr.
-func (a Addr) Less(b Addr) bool {
+type Comparison int
+
+const (
+	LessThan    Comparison = -1
+	EqualTo     Comparison = 0
+	GreaterThan Comparison = 1
+)
+
+func (a Addr) Cmp(b Addr) Comparison {
 	for i := 0; i < 32; i++ {
-		if a[i] < b[i] {
-			return true
-		}
-		if a[i] > b[i] {
-			return false
+		switch {
+		case a[i] < b[i]:
+			return LessThan
+		case a[i] > b[i]:
+			return GreaterThan
 		}
 	}
-	return false
+	return EqualTo
+}
+
+// Less returns true iff this Addr is lexically before the given Addr.
+func (a Addr) Less(b Addr) bool {
+	return a.Cmp(b) == LessThan
 }
 
 func (addr Addr) GoString() string {
-	return fmt.Sprintf("Addr(%q)", addr.String())
+	return fmt.Sprintf("cas.ParseAddr(%q)", addr.String())
 }
 
 func (addr Addr) String() string {
 	return hex.EncodeToString(addr[:])
+}
+
+func ParseAddr(in string) (Addr, error) {
+	addr := Addr{}
+	if err := addr.Parse(in); err != nil {
+		return addr, err
+	}
+	return addr, nil
 }
 
 // AddrParseError is the error returned when Addr.Parse fails.
