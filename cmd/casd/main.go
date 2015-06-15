@@ -7,10 +7,10 @@ import (
 
 	"google.golang.org/grpc"
 
-	"github.com/chronos-tachyon/go-cas"
-	"github.com/chronos-tachyon/go-cas/fs"
-	"github.com/chronos-tachyon/go-cas/libdiskserver"
+	"github.com/chronos-tachyon/go-cas/common"
 	"github.com/chronos-tachyon/go-cas/proto"
+	"github.com/chronos-tachyon/go-cas/server/diskserver"
+	"github.com/chronos-tachyon/go-cas/server/fs"
 )
 
 func main() {
@@ -24,7 +24,7 @@ func main() {
 	flag.StringVar(&dirFlag, "dir", "", "directory in which to store "+
 		"CAS blocks")
 	flag.Uint64Var(&limitFlag, "limit", 0, "maximum number of blocks to "+
-		"store on disk ("+cas.BlockSizeHuman+" each)")
+		"store on diskserver ("+common.BlockSizeHuman+" each)")
 	flag.UintVar(&depthFlag, "depth", 4, "number of subdirectories "+
 		"between --dir and the *.data files.  Larger depths scale to "+
 		"larger workloads, at the cost of more inodes.")
@@ -44,13 +44,13 @@ func main() {
 		log.Fatalf("error: missing required flag: --limit")
 	}
 
-	network, address, err := cas.ParseDialSpec(listenFlag)
+	network, address, err := common.ParseDialSpec(listenFlag)
 	if err != nil {
 		log.Fatalf("%v", err)
 	}
 
 	fs := fs.NativeFileSystem{RootDir: dirFlag}
-	cas, err := libdiskserver.New(fs, limitFlag, depthFlag, slotsFlag)
+	cas, err := diskserver.New(fs, limitFlag, depthFlag, slotsFlag)
 	if err != nil {
 		log.Fatalf("error: %v", err)
 	}

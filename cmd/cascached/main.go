@@ -10,7 +10,9 @@ import (
 	"net"
 	"sync"
 
-	"github.com/chronos-tachyon/go-cas"
+	"github.com/chronos-tachyon/go-cas/client"
+	"github.com/chronos-tachyon/go-cas/common"
+	"github.com/chronos-tachyon/go-cas/server"
 	"github.com/chronos-tachyon/go-cas/proto"
 	"github.com/chronos-tachyon/go-multierror"
 	"golang.org/x/net/context"
@@ -20,33 +22,33 @@ import (
 const maxuint32 = ^uint32(0)
 const maxuint = ^uint(0)
 
-type server struct {
+type Server struct {
 	mutex    sync.RWMutex
 	shards   []cacheShard
-	fallback cas.Client
+	fallback client.Client
 }
 
 type cacheShard struct {
 	mutex   sync.Mutex
 	max     int
 	inUse   *big.Int
-	storage []cas.Block
+	storage []server.Block
 	heap    cacheHeap
-	byAddr  map[cas.Addr]*cacheItem
+	byAddr  map[server.Addr]*cacheItem
 }
 
 type cacheHeap []*cacheItem
 
 type cacheItem struct {
 	count uint32
-	addr  cas.Addr
+	addr  server.Addr
 	index int
 }
 
-func NewServer(fallback cas.Client, m, n uint) *server {
+func NewServer(fallback client.Client, m, n uint) *Server {
 	numShards := int(m)
 	perShardMax := int(n)
-	s := &server{
+	s := &Server{
 		fallback: fallback,
 		shards:   make([]cacheShard, numShards),
 	}
@@ -58,16 +60,16 @@ func NewServer(fallback cas.Client, m, n uint) *server {
 		s.shards[i] = cacheShard{
 			max:     perShardMax,
 			inUse:   inUse,
-			storage: make([]cas.Block, perShardMax),
+			storage: make([]server.Block, perShardMax),
 			heap:    make(cacheHeap, 0, perShardMax),
-			byAddr:  make(map[cas.Addr]*cacheItem, perShardMax),
+			byAddr:  make(map[server.Addr]*cacheItem, perShardMax),
 		}
 	}
 	return s
 }
 
-func (s *server) Get(ctx context.Context, in *proto.GetRequest) (*proto.GetReply, error) {
-	var addr cas.Addr
+func (s *Server) Get(ctx context.Context, in *proto.GetRequest) (*proto.GetReply, error) {
+	var addr server.Addr
 	if err := addr.Parse(in.Addr); err != nil {
 		return nil, err
 	}
@@ -94,8 +96,8 @@ func (s *server) Get(ctx context.Context, in *proto.GetRequest) (*proto.GetReply
 	})
 	return out, err
 }
-func (s *server) Put(ctx context.Context, in *proto.PutRequest) (*proto.PutReply, error) {
-	var block cas.Block
+func (s *Server) Put(ctx context.Context, in *proto.PutRequest) (*proto.PutReply, error) {
+	var block server.Block
 	if err := block.Pad(in.Block); err != nil {
 		return nil, err
 	}
@@ -117,8 +119,8 @@ func (s *server) Put(ctx context.Context, in *proto.PutRequest) (*proto.PutReply
 	})
 	return out, err
 }
-func (s *server) Remove(ctx context.Context, in *proto.RemoveRequest) (*proto.RemoveReply, error) {
-	var addr cas.Addr
+func (s *Server) Remove(ctx context.Context, in *proto.RemoveRequest) (*proto.RemoveReply, error) {
+	var addr server.Addr
 	if err := addr.Parse(in.Addr); err != nil {
 		return nil, err
 	}
@@ -142,11 +144,11 @@ func (s *server) Remove(ctx context.Context, in *proto.RemoveRequest) (*proto.Re
 	})
 	return out, err
 }
-func (s *server) Stat(ctx context.Context, in *proto.StatRequest) (*proto.StatReply, error) {
+func (s *Server) Stat(ctx context.Context, in *proto.StatRequest) (*proto.StatReply, error) {
 	// Not cached
 	return s.fallback.Stat(ctx, in)
 }
-func (s *server) Walk(in *proto.WalkRequest, serverstream proto.CAS_WalkServer) error {
+func (s *Server) Walk(in *proto.WalkRequest, serverstream proto.CAS_WalkServer) error {
 	// Not cached
 	clientstream, err := s.fallback.Walk(serverstream.Context(), in)
 	if err != nil {
@@ -166,7 +168,7 @@ func (s *server) Walk(in *proto.WalkRequest, serverstream proto.CAS_WalkServer) 
 	return multierror.New(errors)
 }
 
-func (s *server) shardFor(addr cas.Addr) *cacheShard {
+func (s *Server) shardFor(addr server.Addr) *cacheShard {
 	var i uint
 	if maxuint == uint(maxuint32) {
 		i = uint(binary.BigEndian.Uint32(addr[:]))
@@ -195,7 +197,7 @@ func (shard *cacheShard) allocateUnlocked() int {
 	shard.inUse.SetBit(shard.inUse, i, 1)
 	return i
 }
-func (shard *cacheShard) insertUnlocked(addr cas.Addr, raw []byte) {
+func (shard *cacheShard) insertUnlocked(addr server.Addr, raw []byte) {
 	index := shard.allocateUnlocked()
 	item := &cacheItem{count: 0, addr: addr, index: index}
 	shard.storage[index].Pad(raw)
@@ -268,7 +270,7 @@ func main() {
 	flag.StringVar(&backendFlag, "backend", "",
 		"CAS backend to connect to for cache misses")
 	flag.UintVar(&limitFlag, "limit", 0,
-		"maximum number of "+cas.BlockSizeHuman+" blocks to cache in RAM")
+		"maximum number of "+common.BlockSizeHuman+" blocks to cache in RAM")
 	flag.UintVar(&numShardsFlag, "num_shards", 16,
 		"shard data N ways for parallelism")
 	flag.Parse()
@@ -295,13 +297,13 @@ func main() {
 
 	log.Printf("m=%d, n=%d, o=%d", m, n, o)
 
-	client, err := cas.DialClient(backendFlag, grpc.WithBlock())
+	client, err := client.DialClient(backendFlag, grpc.WithBlock())
 	if err != nil {
 		log.Fatalf("error: failed to dial: %q: %v", backendFlag, err)
 	}
 	defer client.Close()
 
-	network, address, err := cas.ParseDialSpec(listenFlag)
+	network, address, err := common.ParseDialSpec(listenFlag)
 	if err != nil {
 		log.Fatalf("%v", err)
 	}

@@ -9,4 +9,3 @@ const (
 	EqualTo     Comparison = 0
 	GreaterThan Comparison = 1
 )
-

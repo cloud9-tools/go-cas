@@ -7,7 +7,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/chronos-tachyon/go-cas/libcasutil"
+	"github.com/chronos-tachyon/go-cas/client/libcasutil"
 )
 
 const defaultSpec = "ram:0"
