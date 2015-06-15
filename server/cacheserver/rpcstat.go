@@ -6,7 +6,6 @@ import (
 	"github.com/chronos-tachyon/go-cas/proto"
 )
 
-func (s *Server) Stat(ctx context.Context, in *proto.StatRequest) (*proto.StatReply, error) {
-	// Not cached
-	return s.fallback.Stat(ctx, in)
+func (srv *Server) Stat(ctx context.Context, in *proto.StatRequest) (*proto.StatReply, error) {
+	return srv.fallback.Stat(ctx, in)
 }

@@ -3,30 +3,49 @@ package cacheserver // import "github.com/chronos-tachyon/go-cas/server/cacheser
 import (
 	"golang.org/x/net/context"
 
+	"github.com/chronos-tachyon/go-cas/internal"
 	"github.com/chronos-tachyon/go-cas/proto"
 	"github.com/chronos-tachyon/go-cas/server"
 )
 
-func (s *Server) Put(ctx context.Context, in *proto.PutRequest) (*proto.PutReply, error) {
+func (srv *Server) Put(ctx context.Context, in *proto.PutRequest) (out *proto.PutReply, err error) {
 	var block server.Block
 	if err := block.Pad(in.Block); err != nil {
 		return nil, err
 	}
 	addr := block.Addr()
-	shard := s.shardFor(addr)
-	var out *proto.PutReply
-	var err error
-	locked(&shard.mutex, func() {
-		out, err = s.fallback.Put(ctx, in)
-		if item, found := shard.byAddr[addr]; found {
-			// UPDATE
-			item.bump()
-			shard.storage[item.index].Pad(in.Block)
-		} else {
-			// INSERT
-			shard.evictUnlocked(1)
-			shard.insertUnlocked(addr, in.Block)
+	s := srv.shardFor(addr)
+
+	unmarkBusy := false
+	defer func() {
+		if unmarkBusy {
+			internal.Locked(&s.mutex, func() {
+				s.UnmarkBusy(addr)
+			})
 		}
+	}()
+
+	internal.Locked(&s.mutex, func() {
+		s.Await(addr)
+		s.MarkBusy(addr)
+		unmarkBusy = true
+	})
+
+	out, err = srv.fallback.Put(ctx, in)
+	if err != nil {
+		return nil, err
+	}
+
+	internal.Locked(&s.mutex, func() {
+		e := s.byAddr[addr]
+		if e != nil {
+			s.Bump(e)
+			return
+		}
+		e = &entry{addr: addr, block: &block}
+		s.TryInsert(e)
+		s.UnmarkBusy(addr)
+		unmarkBusy = false
 	})
 	return out, err
 }

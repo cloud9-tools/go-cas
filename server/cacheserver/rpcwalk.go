@@ -4,25 +4,22 @@ import (
 	"io"
 
 	"github.com/chronos-tachyon/go-cas/proto"
-	"github.com/chronos-tachyon/go-multierror"
 )
 
-func (s *Server) Walk(in *proto.WalkRequest, serverstream proto.CAS_WalkServer) error {
-	// Not cached
-	clientstream, err := s.fallback.Walk(serverstream.Context(), in)
+func (srv *Server) Walk(in *proto.WalkRequest, serverstream proto.CAS_WalkServer) error {
+	clientstream, err := srv.fallback.Walk(serverstream.Context(), in)
 	if err != nil {
 		return err
 	}
-	var errors []error
 	for {
 		item, err := clientstream.Recv()
-		if err != nil {
-			if err != io.EOF {
-				errors = append(errors, err)
-			}
+		if err == io.EOF {
 			break
 		}
-		errors = append(errors, serverstream.Send(item))
+		if err != nil {
+			return err
+		}
+		serverstream.Send(item)
 	}
-	return multierror.New(errors)
+	return nil
 }

@@ -3,15 +3,21 @@ package main
 import (
 	"flag"
 	"log"
+	"math/rand"
 	"net"
+	"time"
 
 	"google.golang.org/grpc"
 
 	"github.com/chronos-tachyon/go-cas/client"
 	"github.com/chronos-tachyon/go-cas/common"
-	"github.com/chronos-tachyon/go-cas/server/cacheserver"
 	"github.com/chronos-tachyon/go-cas/proto"
+	"github.com/chronos-tachyon/go-cas/server/cacheserver"
 )
+
+var ZipfModel cacheserver.ModelFunc = func(index, size int) float64 {
+	return 1.0 / (float64(index) + 1.0)
+}
 
 func main() {
 	log.SetPrefix("cascached: ")
@@ -39,16 +45,16 @@ func main() {
 		log.Fatalf("error: missing required flag: --limit")
 	}
 
-	var m uint
-	for numShardsFlag > (1 << m) {
+	var m uint32
+	for numShardsFlag > uint(1<<m) {
 		m++
 	}
-	if m != numShardsFlag {
+	if numShardsFlag != uint(m) {
 		log.Printf("warning: effective shard count is --num_shards=%d", m)
 	}
-	n := (limitFlag + m - 1) / m
+	n := (uint32(limitFlag) + m - 1) / m
 	o := m * n
-	if limitFlag != o {
+	if limitFlag != uint(o) {
 		log.Printf("warning: effective limit is --limit=%d", o)
 	}
 
@@ -60,6 +66,9 @@ func main() {
 	}
 	defer client.Close()
 
+	rng := rand.New(rand.NewSource(time.Now().UnixNano()))
+	srv := cacheserver.NewServer(client, m, n, ZipfModel, cacheserver.RandFunc(rng.Float64))
+
 	network, address, err := common.ParseDialSpec(listenFlag)
 	if err != nil {
 		log.Fatalf("%v", err)
@@ -70,6 +79,6 @@ func main() {
 		log.Fatalf("failed to listen: %q, %q: %v", network, address, err)
 	}
 	s := grpc.NewServer()
-	proto.RegisterCASServer(s, cacheserver.NewServer(client, m, n))
+	proto.RegisterCASServer(s, srv)
 	s.Serve(listen)
 }

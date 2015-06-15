@@ -2,36 +2,76 @@ package cacheserver // import "github.com/chronos-tachyon/go-cas/server/cacheser
 
 import (
 	"golang.org/x/net/context"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 
+	"github.com/chronos-tachyon/go-cas/client"
+	"github.com/chronos-tachyon/go-cas/internal"
 	"github.com/chronos-tachyon/go-cas/proto"
 	"github.com/chronos-tachyon/go-cas/server"
 )
 
-func (s *Server) Get(ctx context.Context, in *proto.GetRequest) (*proto.GetReply, error) {
+func (srv *Server) Get(ctx context.Context, in *proto.GetRequest) (out *proto.GetReply, err error) {
 	var addr server.Addr
 	if err := addr.Parse(in.Addr); err != nil {
 		return nil, err
 	}
-	shard := s.shardFor(addr)
-	var out *proto.GetReply
-	var err error
-	locked(&shard.mutex, func() {
-		if item, found := shard.byAddr[addr]; found {
-			// HIT
-			item.bump()
-			out = &proto.GetReply{Found: true}
-			if !in.NoBlock {
-				out.Block = shard.storage[item.index][:]
-			}
-		} else {
-			// MISS
-			out, err = s.fallback.Get(ctx, in)
-			if err != nil {
-				return
-			}
-			shard.evictUnlocked(1)
-			shard.insertUnlocked(addr, out.Block)
+	s := srv.shardFor(addr)
+
+	unmarkBusy := false
+	defer func() {
+		if unmarkBusy {
+			internal.Locked(&s.mutex, func() {
+				s.UnmarkBusy(addr)
+			})
 		}
+	}()
+
+	e := (*entry)(nil)
+	internal.Locked(&s.mutex, func() {
+		s.Await(addr)
+		e = s.byAddr[addr]
+		if e != nil {
+			s.Bump(e)
+			return
+		}
+		s.MarkBusy(addr)
+		unmarkBusy = true
 	})
+	if e == nil {
+		e, err = doBypassGet(srv.fallback, ctx, addr)
+		if err != nil {
+			return nil, err
+		}
+		internal.Locked(&s.mutex, func() {
+			s.TryInsert(e)
+			s.UnmarkBusy(addr)
+			unmarkBusy = false
+		})
+	}
+	if e != nil {
+		out.Found = true
+		if !in.NoBlock {
+			out.Block = e.block[:]
+		}
+	}
 	return out, err
+}
+
+func doBypassGet(fallback client.Client, ctx context.Context, addr server.Addr) (*entry, error) {
+	out, err := fallback.Get(ctx, &proto.GetRequest{
+		Addr:    addr.String(),
+		NoBlock: false,
+	})
+	if err != nil {
+		return nil, err
+	}
+	if !out.Found {
+		return nil, nil
+	}
+	block := &server.Block{}
+	if err := block.Pad(out.Block); err != nil {
+		return nil, grpc.Errorf(codes.Internal, "go-cas/server/cacheserver: problem with remote server response: %v", err)
+	}
+	return &entry{block: block, addr: addr}, nil
 }
