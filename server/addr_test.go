@@ -14,14 +14,16 @@ func TestAddr_Parse(t *testing.T) {
 		IsZero   bool
 	}
 	for i, row := range []success{
-		success{"0000000000000000000000000000000000000000000000000000000000000000",
+		success{"0000000000000000000000000000000000000000",
 			Addr{},
 			true},
-		success{"000102030405060708090a0b0c0d0e0ff0f1f2f3f4f5f6f7f8f9fafbfcfdfeff",
-			Addr{0, 1, 2, 3, 4, 5, 6, 7,
-				8, 9, 10, 11, 12, 13, 14, 15,
-				240, 241, 242, 243, 244, 245, 246, 247,
-				248, 249, 250, 251, 252, 253, 254, 255},
+		success{"da39a3ee5e6b4b0d3255bfef95601890afd80709",
+			Addr{
+				0xda, 0x39, 0xa3, 0xee, 0x5e,
+				0x6b, 0x4b, 0x0d, 0x32, 0x55,
+				0xbf, 0xef, 0x95, 0x60, 0x18,
+				0x90, 0xaf, 0xd8, 0x07, 0x09,
+			},
 			false},
 	} {
 		var addr Addr
@@ -50,19 +52,19 @@ func TestAddr_Parse(t *testing.T) {
 			fmt.Sprintf(addrParseLenFmt, "", 0)},
 		failure{"x",
 			fmt.Sprintf(addrParseLenFmt, "x", 1)},
-		failure{"000000000000000000000000000000000000000000000000000000000000000",
+		failure{"000000000000000000000000000000000000000",
 			fmt.Sprintf(addrParseLenFmt,
-				"000000000000000000000000000000000000000000000000000000000000000",
-				63)},
-		failure{"0000000000000000000000000000000000000000000000000000000000000000",
+				"000000000000000000000000000000000000000",
+				39)},
+		failure{"0000000000000000000000000000000000000000",
 			""},
-		failure{"00000000000000000000000000000000000000000000000000000000000000000",
+		failure{"00000000000000000000000000000000000000000",
 			fmt.Sprintf(addrParseLenFmt,
-				"00000000000000000000000000000000000000000000000000000000000000000",
-				65)},
-		failure{"000000000000000000000000000000000000000000000000000000000000000x",
+				"00000000000000000000000000000000000000000",
+				41)},
+		failure{"000000000000000000000000000000000000000x",
 			fmt.Sprintf(addrParseDecodeFmt,
-				"000000000000000000000000000000000000000000000000000000000000000x",
+				"000000000000000000000000000000000000000x",
 				`encoding/hex: invalid byte: U+0078 'x'`)},
 	} {
 		var addr Addr
@@ -152,12 +154,14 @@ func TestAddr_Cmp(t *testing.T) {
 }
 
 func TestAddr_GoString(t *testing.T) {
-	addr := Addr{0, 1, 2, 3, 4, 5, 6, 7,
-		8, 9, 10, 11, 12, 13, 14, 15,
-		240, 241, 242, 243, 244, 245, 246, 247,
-		248, 249, 250, 251, 252, 253, 254, 255}
+	addr := Addr{
+		0xda, 0x39, 0xa3, 0xee, 0x5e,
+		0x6b, 0x4b, 0x0d, 0x32, 0x55,
+		0xbf, 0xef, 0x95, 0x60, 0x18,
+		0x90, 0xaf, 0xd8, 0x07, 0x09,
+	}
 	actual := addr.GoString()
-	expect := `cas.Addr("000102030405060708090a0b0c0d0e0ff0f1f2f3f4f5f6f7f8f9fafbfcfdfeff")`
+	expect := `cas.Addr("da39a3ee5e6b4b0d3255bfef95601890afd80709")`
 	if actual != expect {
 		t.Errorf("GoString: %q != %q", expect, actual)
 	}

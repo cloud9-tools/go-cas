@@ -11,13 +11,13 @@ import (
 func TestBlock_Addr(t *testing.T) {
 	var block Block
 	addr := block.Addr()
-	expected00 := "1daec34070a77770121b4c5884888c02a262af0f112abfab2add724875f5bf93"
+	expected00 := "2e000fa7e85759c7f4c254d4d9c33ef481e459a7"
 	if addr.String() != expected00 {
 		t.Errorf("0x00 block: expected %q, got %q", expected00, addr.String())
 	}
 	copy(block[:], bytes.Repeat([]byte{0x42}, common.BlockSize))
 	addr = block.Addr()
-	expected42 := "5e2b1ee30be4a8f2798ca7b312bf9f08a7143fbfb4ec795c3ef0a4e423dbbc6c"
+	expected42 := "70ca3c88438a7db923ae9ac3e8c2ccb1d7a0dda6"
 	if addr.String() != expected42 {
 		t.Errorf("0x42 block: expected %q, got %q", expected42, addr.String())
 	}
@@ -69,8 +69,8 @@ func TestBlock_Pad_too_long(t *testing.T) {
 
 func TestVerify(t *testing.T) {
 	var x, y Addr
-	must(x.Parse("1daec34070a77770121b4c5884888c02a262af0f112abfab2add724875f5bf93"))
-	must(y.Parse("5e2b1ee30be4a8f2798ca7b312bf9f08a7143fbfb4ec795c3ef0a4e423dbbc6c"))
+	must(x.Parse("2e000fa7e85759c7f4c254d4d9c33ef481e459a7"))
+	must(y.Parse("70ca3c88438a7db923ae9ac3e8c2ccb1d7a0dda6"))
 	actual := errorToString(Verify(x, y))
 	expected := fmt.Sprintf(verifyFailureFmt, x, y)
 	if actual != expected {

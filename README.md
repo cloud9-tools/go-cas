@@ -13,14 +13,12 @@ less yours.
 Not familiar with the [CAS][wiki] paradigm?  The basic idea is "let's store
 blobs, but instead of assigning sequential IDs or generating UUIDs, let's hash
 the data to determine its primary key".  Lower-level objects contain raw data,
-higher-level objects contain references to lower-level objects, and so on.  At
-the top of the hierarchy, you need something that isn't the CAS to find the
-root of your data tree, but that's just a small string that you could stick in
-a static file, [etcd][etcd], [Apache ZooKeeper][zoo], or the like.
+higher-level objects contain references to lower-level objects, and so on.
+(This is the same paradigm that Git is built around.)  At the top of the
+hierarchy, you need something that isn't the CAS to find the root of your data
+tree, but that's just a small string that you could stick in a static file,
+[etcd][etcd], [Apache ZooKeeper][zoo], or the like.
 
-This is the same paradigm that Git is built around.  The biggest difference is
-that Git uses SHA-1 to generate keys, whereas this implementation uses
-SHAKE-128 (a fast member of the Keccak/SHA-3 family).
 
 [wiki]: http://en.wikipedia.org/wiki/Content-addressable_storage "Content-addressable storage"
 [zoo]: https://zookeeper.apache.org/

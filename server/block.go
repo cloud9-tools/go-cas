@@ -4,8 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-
-	"golang.org/x/crypto/sha3"
+	"crypto/sha1"
 
 	"github.com/chronos-tachyon/go-cas/common"
 )
@@ -37,11 +36,7 @@ func (block *Block) Pad(raw []byte) error {
 
 // Addr hashes this CAS block to compute its address.
 func (block *Block) Addr() Addr {
-	addr := &Addr{}
-	shake128 := sha3.NewShake128()
-	shake128.Write(block[:])
-	shake128.Read(addr[:])
-	return *addr
+	return sha1.Sum(block[:])
 }
 
 // Trim returns the contents of this CAS block with trailing zeroes removed.
@@ -71,7 +66,7 @@ func (block *Block) String() string {
 	return buf.String()
 }
 
-const verifyFailureFmt = "SHAKE128 hash integrity error: expected CAS block " +
+const verifyFailureFmt = "SHA-1 hash integrity error: expected CAS block " +
 	"to hash to %q, but actually hashed to %q"
 
 // Verify confirms that expected == actual, or else returns an error.

@@ -8,11 +8,11 @@ import (
 )
 
 const addrParseFmtPrefix = "go-cas/server: failed to parse %q as Addr: "
-const addrParseLenFmt = addrParseFmtPrefix + "expected length 64, got length %d"
+const addrParseLenFmt = addrParseFmtPrefix + "expected length 40, got length %d"
 const addrParseDecodeFmt = addrParseFmtPrefix + "%v"
 
-// Addr is the "address" (SHAKE-128 hash) of a CAS block.
-type Addr [32]byte
+// Addr is the "address" (hash) of a CAS block.
+type Addr [20]byte
 
 // Clear sets this Addr to the zero Addr.
 func (addr *Addr) Clear() {
@@ -26,7 +26,7 @@ func (addr Addr) IsZero() bool {
 
 // Parse decodes the input as 64 hex digits, or else returns an error.
 func (addr *Addr) Parse(in string) error {
-	if len(in) != 64 {
+	if len(in) != 40 {
 		return fmt.Errorf(addrParseLenFmt, in, len(in))
 	}
 	raw, err := hex.DecodeString(in)
@@ -39,7 +39,7 @@ func (addr *Addr) Parse(in string) error {
 
 // Cmp lexically compares a to b.
 func (a Addr) Cmp(b Addr) internal.Comparison {
-	for i := 0; i < 32; i++ {
+	for i := range a {
 		switch {
 		case a[i] < b[i]:
 			return internal.LessThan
