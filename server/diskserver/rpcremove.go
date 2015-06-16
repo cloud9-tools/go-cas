@@ -14,8 +14,8 @@ import (
 )
 
 func (srv *Server) Remove(ctx context.Context, in *proto.RemoveRequest) (out *proto.RemoveReply, err error) {
-	if !srv.ACL.Check(ctx, auth.Remove).OK() {
-		return nil, grpc.Errorf(codes.PermissionDenied, "access denied")
+	if err := srv.Auther.Auth(ctx, auth.Remove).Err(); err != nil {
+		return nil, err
 	}
 
 	var addr server.Addr

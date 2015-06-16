@@ -13,8 +13,8 @@ import (
 )
 
 func (srv *Server) Get(ctx context.Context, in *proto.GetRequest) (out *proto.GetReply, err error) {
-	if !srv.acl.Check(ctx, auth.Get).OK() {
-		return nil, grpc.Errorf(codes.PermissionDenied, "access denied")
+	if err := srv.auther.Auth(ctx, auth.Get).Err(); err != nil {
+		return nil, err
 	}
 
 	var addr server.Addr

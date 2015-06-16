@@ -11,8 +11,8 @@ import (
 )
 
 func (srv *Server) Stat(ctx context.Context, in *proto.StatRequest) (out *proto.StatReply, err error) {
-	if !srv.ACL.Check(ctx, auth.StatFS).OK() {
-		return nil, grpc.Errorf(codes.PermissionDenied, "access denied")
+	if err := srv.Auther.Auth(ctx, auth.StatFS).Err(); err != nil {
+		return nil, err
 	}
 
 	out = &proto.StatReply{}

@@ -2,8 +2,6 @@ package cacheserver // import "github.com/chronos-tachyon/go-cas/server/cacheser
 
 import (
 	"golang.org/x/net/context"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
 
 	"github.com/chronos-tachyon/go-cas/internal"
 	"github.com/chronos-tachyon/go-cas/proto"
@@ -12,8 +10,8 @@ import (
 )
 
 func (srv *Server) Put(ctx context.Context, in *proto.PutRequest) (out *proto.PutReply, err error) {
-	if !srv.acl.Check(ctx, auth.Put).OK() {
-		return nil, grpc.Errorf(codes.PermissionDenied, "access denied")
+	if err := srv.auther.Auth(ctx, auth.Put).Err(); err != nil {
+		return nil, err
 	}
 
 	var block server.Block

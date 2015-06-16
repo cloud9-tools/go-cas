@@ -3,16 +3,13 @@ package cacheserver // import "github.com/chronos-tachyon/go-cas/server/cacheser
 import (
 	"io"
 
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
-
 	"github.com/chronos-tachyon/go-cas/proto"
 	"github.com/chronos-tachyon/go-cas/server/auth"
 )
 
 func (srv *Server) Walk(in *proto.WalkRequest, serverstream proto.CAS_WalkServer) error {
-	if !srv.acl.Check(serverstream.Context(), auth.Walk).OK() {
-		return grpc.Errorf(codes.PermissionDenied, "access denied")
+	if err := srv.auther.Auth(serverstream.Context(), auth.Walk).Err(); err != nil {
+		return err
 	}
 
 	clientstream, err := srv.fallback.Walk(serverstream.Context(), in)

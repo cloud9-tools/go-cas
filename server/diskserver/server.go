@@ -13,14 +13,14 @@ import (
 )
 
 type Server struct {
-	ACL          auth.ACL
+	Auther       auth.Auther
 	FS           fs.FileSystem
 	Limit        uint64
 	Depth        uint8
 	MaxSlotsLog2 uint8
 }
 
-func New(access auth.ACL, filesystem fs.FileSystem, limit uint64, depth uint, slots uint) (*Server, error) {
+func New(auther auth.Auther, filesystem fs.FileSystem, limit uint64, depth uint, slots uint) (*Server, error) {
 	if depth < 0 || depth > 30 {
 		return nil, fmt.Errorf("go-cas/libdiskserver: bad depth; expected 0 ≤ x ≤ 30, got %d", depth)
 	}
@@ -31,10 +31,10 @@ func New(access auth.ACL, filesystem fs.FileSystem, limit uint64, depth uint, sl
 		return nil, fmt.Errorf("go-cas/libdiskserver: bad slots; expected power of 2, got %d", slots)
 	}
 	server := &Server{
-		ACL:   access,
-		FS:    filesystem,
-		Limit: limit,
-		Depth: uint8(depth),
+		Auther: auther,
+		FS:     filesystem,
+		Limit:  limit,
+		Depth:  uint8(depth),
 	}
 	var i uint8
 	for slots > (1 << i) {

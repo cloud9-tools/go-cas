@@ -18,8 +18,8 @@ import (
 )
 
 func (srv *Server) Walk(in *proto.WalkRequest, stream proto.CAS_WalkServer) (err error) {
-	if !srv.ACL.Check(stream.Context(), auth.Walk).OK() {
-		return grpc.Errorf(codes.PermissionDenied, "access denied")
+	if err := srv.Auther.Auth(stream.Context(), auth.Walk).Err(); err != nil {
+		return err
 	}
 
 	var re *regexp.Regexp

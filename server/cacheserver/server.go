@@ -21,7 +21,7 @@ type ModelFunc func(index, size int) float64
 type RandFunc func() float64
 
 type Server struct {
-	acl      auth.ACL
+	auther   auth.Auther
 	shards   []*shard
 	fallback client.Client
 	model    ModelFunc
@@ -29,9 +29,9 @@ type Server struct {
 	closech  chan struct{}
 }
 
-func NewServer(access auth.ACL, fallback client.Client, numShards, perShardMax uint32, model ModelFunc, rng RandFunc) *Server {
+func NewServer(auther auth.Auther, fallback client.Client, numShards, perShardMax uint32, model ModelFunc, rng RandFunc) *Server {
 	srv := &Server{
-		acl:      access,
+		auther:   auther,
 		shards:   make([]*shard, numShards),
 		fallback: fallback,
 		model:    model,

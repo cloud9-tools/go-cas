@@ -13,8 +13,8 @@ import (
 )
 
 func (srv *Server) Put(ctx context.Context, in *proto.PutRequest) (out *proto.PutReply, err error) {
-	if !srv.ACL.Check(ctx, auth.Put).OK() {
-		return nil, grpc.Errorf(codes.PermissionDenied, "access denied")
+	if err := srv.Auther.Auth(ctx, auth.Put).Err(); err != nil {
+		return nil, err
 	}
 
 	var block server.Block
