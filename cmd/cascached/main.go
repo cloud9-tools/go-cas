@@ -26,6 +26,7 @@ func main() {
 
 	var listenFlag, backendFlag string
 	var limitFlag, numShardsFlag uint
+	flag.Var(common.VersionFlag{}, "version", "show version information")
 	flag.StringVar(&listenFlag, "listen", "",
 		"address to listen on")
 	flag.StringVar(&backendFlag, "backend", "",

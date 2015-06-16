@@ -21,6 +21,7 @@ func main() {
 	var listenFlag, dirFlag string
 	var limitFlag uint64
 	var depthFlag, slotsFlag uint
+	flag.Var(common.VersionFlag{}, "version", "show version information")
 	flag.StringVar(&listenFlag, "listen", "", "address to listen on")
 	flag.StringVar(&dirFlag, "dir", "", "directory in which to store "+
 		"CAS blocks")

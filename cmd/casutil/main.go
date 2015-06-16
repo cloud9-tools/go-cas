@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/chronos-tachyon/go-cas/client/libcasutil"
+	"github.com/chronos-tachyon/go-cas/common"
 )
 
 const defaultSpec = "ram:0"
@@ -22,6 +23,7 @@ func main() {
 
 	var backendFlag, sourceFlag string
 	var timeoutFlag time.Duration
+	flag.Var(common.VersionFlag{}, "version", "show version information")
 	flag.StringVar(&backendFlag, "backend", "", "default CAS backend for commands to operate on")
 	flag.StringVar(&backendFlag, "B", "", "shorthand for --backend")
 	flag.StringVar(&sourceFlag, "source", "", "default CAS backend for the 'cp' command to read from")
