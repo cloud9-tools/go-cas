@@ -1,4 +1,4 @@
-package acl // import "github.com/chronos-tachyon/go-cas/server/acl"
+package auth // import "github.com/chronos-tachyon/go-cas/server/auth"
 
 import (
 	"log"

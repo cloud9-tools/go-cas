@@ -8,12 +8,12 @@ import (
 	"github.com/chronos-tachyon/go-cas/internal"
 	"github.com/chronos-tachyon/go-cas/proto"
 	"github.com/chronos-tachyon/go-cas/server"
-	"github.com/chronos-tachyon/go-cas/server/acl"
+	"github.com/chronos-tachyon/go-cas/server/auth"
 	"github.com/chronos-tachyon/go-cas/server/fs"
 )
 
 func (srv *Server) Get(ctx context.Context, in *proto.GetRequest) (out *proto.GetReply, err error) {
-	if !srv.ACL.Check(ctx, acl.Get).OK() {
+	if !srv.ACL.Check(ctx, auth.Get).OK() {
 		return nil, grpc.Errorf(codes.PermissionDenied, "access denied")
 	}
 

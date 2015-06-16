@@ -7,11 +7,11 @@ import (
 	"google.golang.org/grpc/codes"
 
 	"github.com/chronos-tachyon/go-cas/proto"
-	"github.com/chronos-tachyon/go-cas/server/acl"
+	"github.com/chronos-tachyon/go-cas/server/auth"
 )
 
 func (srv *Server) Walk(in *proto.WalkRequest, serverstream proto.CAS_WalkServer) error {
-	if !srv.acl.Check(serverstream.Context(), acl.Walk).OK() {
+	if !srv.acl.Check(serverstream.Context(), auth.Walk).OK() {
 		return grpc.Errorf(codes.PermissionDenied, "access denied")
 	}
 

@@ -9,7 +9,7 @@ import (
 
 	"github.com/chronos-tachyon/go-cas/common"
 	"github.com/chronos-tachyon/go-cas/proto"
-	"github.com/chronos-tachyon/go-cas/server/acl"
+	"github.com/chronos-tachyon/go-cas/server/auth"
 	"github.com/chronos-tachyon/go-cas/server/diskserver"
 	"github.com/chronos-tachyon/go-cas/server/fs"
 )
@@ -52,7 +52,7 @@ func main() {
 	}
 
 	fs := fs.NativeFileSystem{RootDir: dirFlag}
-	cas, err := diskserver.New(acl.AllowAll(), fs, limitFlag, depthFlag, slotsFlag)
+	cas, err := diskserver.New(auth.AllowAll(), fs, limitFlag, depthFlag, slotsFlag)
 	if err != nil {
 		log.Fatalf("error: %v", err)
 	}

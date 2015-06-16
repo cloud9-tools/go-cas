@@ -7,20 +7,20 @@ import (
 	"github.com/chronos-tachyon/go-cas/internal"
 	"github.com/chronos-tachyon/go-cas/proto"
 	"github.com/chronos-tachyon/go-cas/server"
-	"github.com/chronos-tachyon/go-cas/server/acl"
+	"github.com/chronos-tachyon/go-cas/server/auth"
 	"github.com/chronos-tachyon/go-cas/server/fs"
 	"github.com/chronos-tachyon/go-multierror"
 )
 
 type Server struct {
-	ACL          acl.ACL
+	ACL          auth.ACL
 	FS           fs.FileSystem
 	Limit        uint64
 	Depth        uint8
 	MaxSlotsLog2 uint8
 }
 
-func New(access acl.ACL, filesystem fs.FileSystem, limit uint64, depth uint, slots uint) (*Server, error) {
+func New(access auth.ACL, filesystem fs.FileSystem, limit uint64, depth uint, slots uint) (*Server, error) {
 	if depth < 0 || depth > 30 {
 		return nil, fmt.Errorf("go-cas/libdiskserver: bad depth; expected 0 ≤ x ≤ 30, got %d", depth)
 	}

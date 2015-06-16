@@ -6,11 +6,11 @@ import (
 	"google.golang.org/grpc/codes"
 
 	"github.com/chronos-tachyon/go-cas/proto"
-	"github.com/chronos-tachyon/go-cas/server/acl"
+	"github.com/chronos-tachyon/go-cas/server/auth"
 )
 
 func (srv *Server) Stat(ctx context.Context, in *proto.StatRequest) (*proto.StatReply, error) {
-	if !srv.acl.Check(ctx, acl.StatFS).OK() {
+	if !srv.acl.Check(ctx, auth.StatFS).OK() {
 		return nil, grpc.Errorf(codes.PermissionDenied, "access denied")
 	}
 

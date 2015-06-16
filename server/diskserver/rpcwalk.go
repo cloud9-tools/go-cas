@@ -12,13 +12,13 @@ import (
 	"github.com/chronos-tachyon/go-cas/internal"
 	"github.com/chronos-tachyon/go-cas/proto"
 	"github.com/chronos-tachyon/go-cas/server"
-	"github.com/chronos-tachyon/go-cas/server/acl"
+	"github.com/chronos-tachyon/go-cas/server/auth"
 	"github.com/chronos-tachyon/go-cas/server/fs"
 	"github.com/chronos-tachyon/go-multierror"
 )
 
 func (srv *Server) Walk(in *proto.WalkRequest, stream proto.CAS_WalkServer) (err error) {
-	if !srv.ACL.Check(stream.Context(), acl.Walk).OK() {
+	if !srv.ACL.Check(stream.Context(), auth.Walk).OK() {
 		return grpc.Errorf(codes.PermissionDenied, "access denied")
 	}
 

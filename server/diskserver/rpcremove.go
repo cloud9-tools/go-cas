@@ -9,12 +9,12 @@ import (
 	"github.com/chronos-tachyon/go-cas/internal"
 	"github.com/chronos-tachyon/go-cas/proto"
 	"github.com/chronos-tachyon/go-cas/server"
-	"github.com/chronos-tachyon/go-cas/server/acl"
+	"github.com/chronos-tachyon/go-cas/server/auth"
 	"github.com/chronos-tachyon/go-cas/server/fs"
 )
 
 func (srv *Server) Remove(ctx context.Context, in *proto.RemoveRequest) (out *proto.RemoveReply, err error) {
-	if !srv.ACL.Check(ctx, acl.Remove).OK() {
+	if !srv.ACL.Check(ctx, auth.Remove).OK() {
 		return nil, grpc.Errorf(codes.PermissionDenied, "access denied")
 	}
 

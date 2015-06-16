@@ -7,7 +7,7 @@ import (
 
 	"github.com/chronos-tachyon/go-cas/client"
 	"github.com/chronos-tachyon/go-cas/server"
-	"github.com/chronos-tachyon/go-cas/server/acl"
+	"github.com/chronos-tachyon/go-cas/server/auth"
 )
 
 // ModelFunc is a function that takes the size of a cache and the index of one
@@ -21,7 +21,7 @@ type ModelFunc func(index, size int) float64
 type RandFunc func() float64
 
 type Server struct {
-	acl      acl.ACL
+	acl      auth.ACL
 	shards   []*shard
 	fallback client.Client
 	model    ModelFunc
@@ -29,7 +29,7 @@ type Server struct {
 	closech  chan struct{}
 }
 
-func NewServer(access acl.ACL, fallback client.Client, numShards, perShardMax uint32, model ModelFunc, rng RandFunc) *Server {
+func NewServer(access auth.ACL, fallback client.Client, numShards, perShardMax uint32, model ModelFunc, rng RandFunc) *Server {
 	srv := &Server{
 		acl:      access,
 		shards:   make([]*shard, numShards),
