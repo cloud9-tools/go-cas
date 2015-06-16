@@ -8,10 +8,15 @@ import (
 	"github.com/chronos-tachyon/go-cas/internal"
 	"github.com/chronos-tachyon/go-cas/proto"
 	"github.com/chronos-tachyon/go-cas/server"
+	"github.com/chronos-tachyon/go-cas/server/acl"
 	"github.com/chronos-tachyon/go-cas/server/fs"
 )
 
-func (s *Server) Get(ctx context.Context, in *proto.GetRequest) (out *proto.GetReply, err error) {
+func (srv *Server) Get(ctx context.Context, in *proto.GetRequest) (out *proto.GetReply, err error) {
+	if !srv.ACL.Check(ctx, acl.Get).OK() {
+		return nil, grpc.Errorf(codes.PermissionDenied, "access denied")
+	}
+
 	var addr server.Addr
 	if err = addr.Parse(in.Addr); err != nil {
 		return nil, grpc.Errorf(codes.InvalidArgument, "%v", err)
@@ -26,7 +31,7 @@ func (s *Server) Get(ctx context.Context, in *proto.GetRequest) (out *proto.GetR
 		internal.Debugf("-- end Get: out=%v err=%v", out, err)
 	}()
 
-	h, err := s.Open(addr, fs.ReadOnly)
+	h, err := srv.Open(addr, fs.ReadOnly)
 	if err != nil {
 		return nil, grpc.Errorf(codes.Unknown, "%v", err)
 	}

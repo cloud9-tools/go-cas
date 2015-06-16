@@ -12,11 +12,16 @@ import (
 	"github.com/chronos-tachyon/go-cas/internal"
 	"github.com/chronos-tachyon/go-cas/proto"
 	"github.com/chronos-tachyon/go-cas/server"
+	"github.com/chronos-tachyon/go-cas/server/acl"
 	"github.com/chronos-tachyon/go-cas/server/fs"
 	"github.com/chronos-tachyon/go-multierror"
 )
 
-func (s *Server) Walk(in *proto.WalkRequest, stream proto.CAS_WalkServer) (err error) {
+func (srv *Server) Walk(in *proto.WalkRequest, stream proto.CAS_WalkServer) (err error) {
+	if !srv.ACL.Check(stream.Context(), acl.Walk).OK() {
+		return grpc.Errorf(codes.PermissionDenied, "access denied")
+	}
+
 	var re *regexp.Regexp
 	if in.Regexp != "" {
 		re, err = regexp.Compile(in.Regexp)
@@ -30,7 +35,7 @@ func (s *Server) Walk(in *proto.WalkRequest, stream proto.CAS_WalkServer) (err e
 	}()
 
 	var errors []error
-	toperr := s.FS.Walk(func(path string, fi os.FileInfo, err error) error {
+	toperr := srv.FS.Walk(func(path string, fi os.FileInfo, err error) error {
 		if err != nil {
 			internal.Debugf("item: path=%q err=%v", path, err)
 			errors = append(errors, err)
@@ -39,7 +44,7 @@ func (s *Server) Walk(in *proto.WalkRequest, stream proto.CAS_WalkServer) (err e
 		if fi == nil ||
 			!fi.Mode().IsRegular() ||
 			!strings.HasSuffix(path, ".index") ||
-			strings.Count(path, "/") != int(s.Depth) {
+			strings.Count(path, "/") != int(srv.Depth) {
 			return nil
 		}
 		x := strings.TrimSuffix(path, ".index")
@@ -52,7 +57,7 @@ func (s *Server) Walk(in *proto.WalkRequest, stream proto.CAS_WalkServer) (err e
 		var fakeAddr server.Addr
 		copy(fakeAddr[:len(y)], y)
 		internal.Debugf("fakeAddr=%v", fakeAddr)
-		h, err := s.Open(fakeAddr, fs.ReadOnly)
+		h, err := srv.Open(fakeAddr, fs.ReadOnly)
 		if err != nil {
 			errors = append(errors, err)
 			return nil

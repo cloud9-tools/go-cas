@@ -7,18 +7,20 @@ import (
 	"github.com/chronos-tachyon/go-cas/internal"
 	"github.com/chronos-tachyon/go-cas/proto"
 	"github.com/chronos-tachyon/go-cas/server"
+	"github.com/chronos-tachyon/go-cas/server/acl"
 	"github.com/chronos-tachyon/go-cas/server/fs"
 	"github.com/chronos-tachyon/go-multierror"
 )
 
 type Server struct {
+	ACL          acl.ACL
 	FS           fs.FileSystem
 	Limit        uint64
 	Depth        uint8
 	MaxSlotsLog2 uint8
 }
 
-func New(filesystem fs.FileSystem, limit uint64, depth uint, slots uint) (*Server, error) {
+func New(access acl.ACL, filesystem fs.FileSystem, limit uint64, depth uint, slots uint) (*Server, error) {
 	if depth < 0 || depth > 30 {
 		return nil, fmt.Errorf("go-cas/libdiskserver: bad depth; expected 0 ≤ x ≤ 30, got %d", depth)
 	}
@@ -28,7 +30,12 @@ func New(filesystem fs.FileSystem, limit uint64, depth uint, slots uint) (*Serve
 	if s := uint(slots); (s & (s - 1)) != 0 {
 		return nil, fmt.Errorf("go-cas/libdiskserver: bad slots; expected power of 2, got %d", slots)
 	}
-	server := &Server{FS: filesystem, Limit: limit, Depth: uint8(depth)}
+	server := &Server{
+		ACL:   access,
+		FS:    filesystem,
+		Limit: limit,
+		Depth: uint8(depth),
+	}
 	var i uint8
 	for slots > (1 << i) {
 		i++

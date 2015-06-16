@@ -2,9 +2,9 @@ package server // import "github.com/chronos-tachyon/go-cas/server"
 
 import (
 	"bytes"
+	"crypto/sha1"
 	"errors"
 	"fmt"
-	"crypto/sha1"
 
 	"github.com/chronos-tachyon/go-cas/common"
 )

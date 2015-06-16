@@ -8,10 +8,15 @@ import (
 	"github.com/chronos-tachyon/go-cas/internal"
 	"github.com/chronos-tachyon/go-cas/proto"
 	"github.com/chronos-tachyon/go-cas/server"
+	"github.com/chronos-tachyon/go-cas/server/acl"
 	"github.com/chronos-tachyon/go-cas/server/fs"
 )
 
-func (s *Server) Put(ctx context.Context, in *proto.PutRequest) (out *proto.PutReply, err error) {
+func (srv *Server) Put(ctx context.Context, in *proto.PutRequest) (out *proto.PutReply, err error) {
+	if !srv.ACL.Check(ctx, acl.Put).OK() {
+		return nil, grpc.Errorf(codes.PermissionDenied, "access denied")
+	}
+
 	var block server.Block
 	if err = block.Pad(in.Block); err != nil {
 		return nil, grpc.Errorf(codes.InvalidArgument, "%v", err)
@@ -36,7 +41,7 @@ func (s *Server) Put(ctx context.Context, in *proto.PutRequest) (out *proto.PutR
 		internal.Debugf("-- end Put: out=%v err=%v", out, err)
 	}()
 
-	h, err := s.Open(addr, fs.ReadWrite)
+	h, err := srv.Open(addr, fs.ReadWrite)
 	if err != nil {
 		return nil, grpc.Errorf(codes.Unknown, "%v", err)
 	}
@@ -55,8 +60,8 @@ func (s *Server) Put(ctx context.Context, in *proto.PutRequest) (out *proto.PutR
 	index.Insert(addr, free)
 
 	var overLimit bool
-	err = s.SaveMetadata(func(meta *Metadata) {
-		overLimit = meta.Used >= s.Limit
+	err = srv.SaveMetadata(func(meta *Metadata) {
+		overLimit = meta.Used >= srv.Limit
 		if overLimit {
 			internal.Debug("over limit")
 		} else {
@@ -71,7 +76,7 @@ func (s *Server) Put(ctx context.Context, in *proto.PutRequest) (out *proto.PutR
 	}
 	defer func() {
 		if !out.Inserted {
-			s.SaveMetadata(func(meta *Metadata) {
+			srv.SaveMetadata(func(meta *Metadata) {
 				meta.Used--
 			})
 		}

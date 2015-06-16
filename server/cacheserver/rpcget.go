@@ -9,9 +9,14 @@ import (
 	"github.com/chronos-tachyon/go-cas/internal"
 	"github.com/chronos-tachyon/go-cas/proto"
 	"github.com/chronos-tachyon/go-cas/server"
+	"github.com/chronos-tachyon/go-cas/server/acl"
 )
 
 func (srv *Server) Get(ctx context.Context, in *proto.GetRequest) (out *proto.GetReply, err error) {
+	if !srv.acl.Check(ctx, acl.Get).OK() {
+		return nil, grpc.Errorf(codes.PermissionDenied, "access denied")
+	}
+
 	var addr server.Addr
 	if err := addr.Parse(in.Addr); err != nil {
 		return nil, err

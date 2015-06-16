@@ -12,6 +12,7 @@ import (
 	"github.com/chronos-tachyon/go-cas/client"
 	"github.com/chronos-tachyon/go-cas/common"
 	"github.com/chronos-tachyon/go-cas/proto"
+	"github.com/chronos-tachyon/go-cas/server/acl"
 	"github.com/chronos-tachyon/go-cas/server/cacheserver"
 )
 
@@ -67,7 +68,7 @@ func main() {
 	defer client.Close()
 
 	rng := rand.New(rand.NewSource(time.Now().UnixNano()))
-	srv := cacheserver.NewServer(client, m, n, ZipfModel, cacheserver.RandFunc(rng.Float64))
+	srv := cacheserver.NewServer(acl.AllowAll(), client, m, n, ZipfModel, cacheserver.RandFunc(rng.Float64))
 
 	network, address, err := common.ParseDialSpec(listenFlag)
 	if err != nil {

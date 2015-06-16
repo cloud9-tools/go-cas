@@ -2,13 +2,20 @@ package cacheserver // import "github.com/chronos-tachyon/go-cas/server/cacheser
 
 import (
 	"golang.org/x/net/context"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 
 	"github.com/chronos-tachyon/go-cas/internal"
 	"github.com/chronos-tachyon/go-cas/proto"
 	"github.com/chronos-tachyon/go-cas/server"
+	"github.com/chronos-tachyon/go-cas/server/acl"
 )
 
 func (srv *Server) Remove(ctx context.Context, in *proto.RemoveRequest) (out *proto.RemoveReply, err error) {
+	if !srv.acl.Check(ctx, acl.Remove).OK() {
+		return nil, grpc.Errorf(codes.PermissionDenied, "access denied")
+	}
+
 	var addr server.Addr
 	if err := addr.Parse(in.Addr); err != nil {
 		return nil, err
