@@ -3,6 +3,7 @@ package cacheserver // import "github.com/chronos-tachyon/go-cas/server/cacheser
 import (
 	"encoding/binary"
 	"log"
+	"math/rand"
 	"time"
 
 	"github.com/chronos-tachyon/go-cas/client"
@@ -17,29 +18,47 @@ import (
 //	    ∀y:       f(0, y) = 1.0
 type ModelFunc func(index, size int) float64
 
-// RandFunc is a function which returns an x in 0.0 ≤ x ≤ 1.0.
-type RandFunc func() float64
+func UniformModel(index, size int) float64 {
+	return 1.0
+}
+
+func ZipfModel(index, size int) float64 {
+	return 1.0 / (float64(index) + 1.0)
+}
 
 type Server struct {
 	auther   auth.Auther
 	shards   []*shard
 	fallback client.Client
 	model    ModelFunc
-	rng      RandFunc
+	rng      *rand.Rand
 	closech  chan struct{}
 }
 
-func NewServer(auther auth.Auther, fallback client.Client, numShards, perShardMax uint32, model ModelFunc, rng RandFunc) *Server {
+func NewServer(cfg Config) *Server {
+	if err := cfg.Validate(); err != nil {
+		panic(err)
+	}
+	auther := auth.AllowAll()
+	shards := make([]*shard, 0, cfg.NumShards)
+	perShardMax := uint32(cfg.Limit / cfg.NumShards)
+	for i := uint(0); i < cfg.NumShards; i++ {
+		shards = append(shards, NewShard(perShardMax))
+	}
+	fallback, err := cfg.Dial()
+	if err != nil {
+		log.Fatalf("dial error: %q: %v", cfg.Connect, err)
+	}
+	model := ModelFunc(ZipfModel)
+	rng := rand.New(rand.NewSource(time.Now().UnixNano()))
+
 	srv := &Server{
 		auther:   auther,
-		shards:   make([]*shard, numShards),
+		shards:   shards,
 		fallback: fallback,
 		model:    model,
 		rng:      rng,
 		closech:  make(chan struct{}),
-	}
-	for i := range srv.shards {
-		srv.shards[i] = NewShard(perShardMax)
 	}
 	go srv.maintenance()
 	return srv
@@ -47,7 +66,7 @@ func NewServer(auther auth.Auther, fallback client.Client, numShards, perShardMa
 
 func (srv *Server) Close() error {
 	close(srv.closech)
-	return nil
+	return srv.fallback.Close()
 }
 
 func (srv *Server) shardFor(addr server.Addr) *shard {

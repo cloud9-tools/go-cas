@@ -3,6 +3,7 @@ package cacheserver // import "github.com/chronos-tachyon/go-cas/server/cacheser
 import (
 	"sort"
 	"sync"
+	"math/rand"
 
 	"github.com/chronos-tachyon/go-cas/internal"
 	"github.com/chronos-tachyon/go-cas/server"
@@ -147,7 +148,7 @@ func (s *shard) Bump(e *entry) {
 	sort.Stable(s)
 }
 
-func (s *shard) maintain(fn ModelFunc, rng RandFunc) {
+func (s *shard) maintain(fn ModelFunc, rng *rand.Rand) {
 	internal.Locked(&s.mutex, func() {
 		if uint32(len(s.entries)) >= s.max {
 			for uint32(len(s.entries)) > s.max {
@@ -165,7 +166,7 @@ func (s *shard) maintain(fn ModelFunc, rng RandFunc) {
 				// As expected or better: 0% eviction
 				// 10% underperform: 10% eviction
 				// etc.
-				if delta > 0 && rng() < delta {
+				if delta > 0 && rng.Float64() < delta {
 					s.Pop()
 				}
 			}

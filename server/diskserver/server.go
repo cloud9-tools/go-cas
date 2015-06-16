@@ -1,7 +1,6 @@
 package diskserver // import "github.com/chronos-tachyon/go-cas/server/diskserver"
 
 import (
-	"fmt"
 	"path"
 
 	"github.com/chronos-tachyon/go-cas/internal"
@@ -20,28 +19,23 @@ type Server struct {
 	MaxSlotsLog2 uint8
 }
 
-func New(auther auth.Auther, filesystem fs.FileSystem, limit uint64, depth uint, slots uint) (*Server, error) {
-	if depth < 0 || depth > 30 {
-		return nil, fmt.Errorf("go-cas/libdiskserver: bad depth; expected 0 ≤ x ≤ 30, got %d", depth)
+func New(cfg Config) *Server {
+	if err := cfg.Validate(); err != nil {
+		panic(err)
 	}
-	if slots < 1 || slots > 65536 {
-		return nil, fmt.Errorf("go-cas/libdiskserver: bad slots; expected 2^0 ≤ x ≤ 2^16, got %d", slots)
-	}
-	if s := uint(slots); (s & (s - 1)) != 0 {
-		return nil, fmt.Errorf("go-cas/libdiskserver: bad slots; expected power of 2, got %d", slots)
-	}
-	server := &Server{
-		Auther: auther,
-		FS:     filesystem,
-		Limit:  limit,
-		Depth:  uint8(depth),
-	}
+	auther := auth.AllowAll()
+	filesystem := fs.NativeFileSystem{RootDir: cfg.Dir}
 	var i uint8
-	for slots > (1 << i) {
+	for cfg.MaxSlots > (1 << i) {
 		i++
 	}
-	server.MaxSlotsLog2 = i
-	return server, nil
+	return &Server{
+		Auther:       auther,
+		FS:           filesystem,
+		Limit:        cfg.Limit,
+		Depth:        uint8(cfg.Depth),
+		MaxSlotsLog2: i,
+	}
 }
 
 func (s *Server) Open(addr server.Addr, wt fs.WriteType) (*Handle, error) {
