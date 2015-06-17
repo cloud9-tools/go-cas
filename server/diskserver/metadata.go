@@ -23,7 +23,7 @@ type Metadata struct {
 	Mutex        sync.RWMutex
 	NumTotal     uint32
 	Used         UsedBlockList
-	Free         map[string]*FreeBlockList
+	Free         map[string]FreeBlockList
 	BackupData   []byte
 }
 type UsedBlockList []UsedBlock
@@ -56,6 +56,9 @@ func (x FreeBlockList) Less(i, j int) bool {
 func (x FreeBlockList) Swap(i, j int) {
 	x.List[i], x.List[j] = x.List[j], x.List[i]
 }
+func (x FreeBlockList) IsZero() bool {
+	return x.MinUnused == 0 && len(x.List) == 0
+}
 
 func (md *Metadata) PartialAddr(in server.Addr) (out server.Addr) {
 	dw := md.Depth + md.Width
@@ -86,37 +89,46 @@ func (md *Metadata) BlockPath(addr server.Addr) string {
 	return path.Join(segments...)
 }
 
-func (md *Metadata) GetFBL(addr server.Addr) *FreeBlockList {
-	p := md.BlockPath(addr)
-	fbl := md.Free[p]
-	if fbl == nil {
-		fbl = &FreeBlockList{
-			PartialAddr: md.PartialAddr(addr),
-		}
-		if md.Free == nil {
-			md.Free = make(map[string]*FreeBlockList)
-		}
-		md.Free[p] = fbl
+func (md *Metadata) putFBL(fbl FreeBlockList) {
+	p := md.BlockPath(fbl.PartialAddr)
+	if md.Free == nil {
+		md.Free = make(map[string]FreeBlockList)
 	}
-	return fbl
+	md.Free[p] = fbl
 }
 
-func (md *Metadata) Search(addr server.Addr) (blknum uint32, found bool) {
-	index := sort.Search(len(md.Used), func(i int) bool {
+func (md *Metadata) getFBL(addr server.Addr) FreeBlockList {
+	p := md.BlockPath(addr)
+	if fbl, found := md.Free[p]; found {
+		return fbl
+	}
+	return FreeBlockList{
+		PartialAddr: md.PartialAddr(addr),
+	}
+}
+
+func (md *Metadata) Search(addr server.Addr) (slot int, blknum uint32, found bool) {
+	slot = sort.Search(len(md.Used), func(i int) bool {
 		return !md.Used[i].Addr.Less(addr)
 	})
-	if index < len(md.Used) && md.Used[index].Addr == addr {
-		blknum = md.Used[index].Offset
+	if slot < len(md.Used) && md.Used[slot].Addr == addr {
+		blknum = md.Used[slot].Offset
 		found = true
 	}
 	return
 }
 
-func (md *Metadata) Insert(addr server.Addr) (blknum uint32, ok bool) {
+func (md *Metadata) Insert(slot int, addr server.Addr) (blknum uint32, inserted bool) {
 	if uint(len(md.Used)) >= uint(md.NumTotal) {
 		return
 	}
-	fbl := md.GetFBL(addr)
+
+	if slot < len(md.Used) && md.Used[slot].Addr == addr {
+		blknum = md.Used[slot].Offset
+		return
+	}
+
+	fbl := md.getFBL(addr)
 	if len(fbl.List) > 0 {
 		blknum = fbl.List[0]
 		fbl.List = fbl.List[1:]
@@ -126,37 +138,54 @@ func (md *Metadata) Insert(addr server.Addr) (blknum uint32, ok bool) {
 	} else {
 		return
 	}
-	md.Used = append(md.Used, UsedBlock{
+	md.putFBL(fbl)
+
+	used := UsedBlock{
 		Addr:   addr,
 		Offset: blknum,
-	})
-	sort.Sort(md.Used)
-	ok = true
+	}
+
+	md.Used = append(md.Used, used)
+	for i := len(md.Used) - 1; i > slot; i-- {
+		md.Used.Swap(i-1, i)
+	}
+	if !sort.IsSorted(md.Used) {
+		panic("not sorted")
+	}
+
+	inserted = true
 	return
 }
 
-func (md *Metadata) Remove(addr server.Addr) bool {
-	i := sort.Search(len(md.Used), func(i int) bool {
-		return !md.Used[i].Addr.Less(addr)
-	})
-	j := len(md.Used) - 1
-	if i > j || md.Used[i].Addr != addr {
-		return false
+func (md *Metadata) Remove(slot int, addr server.Addr) (minUnused uint32, deleted bool) {
+	max := len(md.Used)-1
+	if slot > max || md.Used[slot].Addr != addr {
+		return ^uint32(0), false
 	}
-	blknum := md.Used[i].Offset
-	md.Used.Swap(i, j)
-	md.Used = md.Used[:j]
-	sort.Sort(md.Used)
-	fbl := md.GetFBL(addr)
+
+	blknum := md.Used[slot].Offset
+	for i := slot; i < max; i++ {
+		md.Used.Swap(i, i+1)
+	}
+	md.Used = md.Used[:max]
+	if !sort.IsSorted(md.Used) {
+		panic("not sorted")
+	}
+
+	fbl := md.getFBL(addr)
 	fbl.List = append(fbl.List, blknum)
-	sort.Sort(fbl)
-	k := len(fbl.List) - 1
-	for k >= 0 && fbl.List[k] == fbl.MinUnused-1 {
-		fbl.List = fbl.List[:k]
-		fbl.MinUnused--
-		k--
+	keep := []uint32(nil)
+	for _, offset := range fbl.List {
+		if offset == fbl.MinUnused-1 {
+			fbl.MinUnused--
+		} else {
+			keep = append(keep, offset)
+		}
 	}
-	return true
+	fbl.List = keep
+	md.putFBL(fbl)
+
+	return fbl.MinUnused, true
 }
 
 func ReadMetadata(primaryFile, secondaryFile fs.File, metadata *Metadata) (err error) {
@@ -209,7 +238,7 @@ func ReadMetadata(primaryFile, secondaryFile fs.File, metadata *Metadata) (err e
 		md.MaxSlotsLog2 = 16
 	}
 	md.Used = make(UsedBlockList, numUsed)
-	md.Free = make(map[string]*FreeBlockList)
+	md.Free = make(map[string]FreeBlockList)
 	n = 20
 	for slot := range md.Used {
 		var addr server.Addr
@@ -218,19 +247,21 @@ func ReadMetadata(primaryFile, secondaryFile fs.File, metadata *Metadata) (err e
 		n += server.AddrSize + 4
 		md.Used[slot].Addr = addr
 		md.Used[slot].Offset = offset
-		fbl := md.GetFBL(addr)
+		fbl := md.getFBL(addr)
 		if offset >= fbl.MinUnused {
 			fbl.MinUnused = offset + 1
 		}
+		md.putFBL(fbl)
 	}
 	for i := uint32(0); i < numFree; i++ {
 		var partialAddr server.Addr
 		copy(partialAddr[:], raw[n:n+server.AddrSize])
 		offset := binary.BigEndian.Uint32(raw[n+server.AddrSize : n+server.AddrSize+4])
-		fbl := md.GetFBL(partialAddr)
+		fbl := md.getFBL(partialAddr)
 		if offset < fbl.MinUnused {
 			fbl.List = append(fbl.List, offset)
 		}
+		md.putFBL(fbl)
 	}
 	md.BackupData = raw
 	buf.AssertEOF()

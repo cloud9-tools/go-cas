@@ -44,29 +44,21 @@ func (srv *Server) Remove(ctx context.Context, in *proto.RemoveRequest) (out *pr
 	}
 	defer f.Close()
 
-	blknum, found := srv.Metadata.Search(addr)
+	slot, blknum, found := srv.Metadata.Search(addr)
 	if !found {
 		return
 	}
-
 	if err = EraseBlock(f, blknum, in.Shred, srv.CRNG); err != nil {
 		err = grpc.Errorf(codes.Unknown, "%v", err)
 		return
 	}
-
-	srv.Metadata.Remove(addr)
-	p := srv.Metadata.BlockPath(addr)
-	fbl := srv.Metadata.Free[p]
-	if fbl == nil {
-		f.Truncate(0)
-	} else {
-		byteOffset := int64(fbl.MinUnused) * common.BlockSize
-		f.Truncate(byteOffset)
+	minUnused, deleted := srv.Metadata.Remove(slot, addr)
+	if !deleted {
+		return
 	}
-
+	byteOffset := int64(minUnused) * common.BlockSize
+	f.Truncate(byteOffset)
 	err = WriteMetadata(srv.MetadataFile, srv.BackupFile, &srv.Metadata)
-	if err == nil {
-		out.Deleted = true
-	}
+	out.Deleted = true
 	return
 }

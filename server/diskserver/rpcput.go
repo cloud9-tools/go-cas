@@ -62,12 +62,12 @@ func (srv *Server) Put(ctx context.Context, in *proto.PutRequest) (out *proto.Pu
 	}
 	defer f.Close()
 
-	_, found := srv.Metadata.Search(addr)
+	slot, _, found := srv.Metadata.Search(addr)
 	if found {
 		return
 	}
-	blknum, found := srv.Metadata.Insert(addr)
-	if !found {
+	blknum, inserted := srv.Metadata.Insert(slot, addr)
+	if !inserted {
 		err = grpc.Errorf(codes.ResourceExhausted, "storage exhausted")
 		return
 	}

@@ -50,7 +50,7 @@ func (srv *Server) Get(ctx context.Context, in *proto.GetRequest) (out *proto.Ge
 	}
 	defer f.Close()
 
-	blknum, found := srv.Metadata.Search(addr)
+	_, blknum, found := srv.Metadata.Search(addr)
 	if !found {
 		return
 	}
