@@ -4,8 +4,8 @@
 package fs
 
 import (
+	server "github.com/chronos-tachyon/go-cas/server"
 	gomock "github.com/golang/mock/gomock"
-	os "os"
 )
 
 // Mock of FileSystem interface
@@ -29,25 +29,37 @@ func (_m *MockFileSystem) EXPECT() *_MockFileSystemRecorder {
 	return _m.recorder
 }
 
-func (_m *MockFileSystem) Open(_param0 string, _param1 WriteType, _param2 IOType) (File, error) {
-	ret := _m.ctrl.Call(_m, "Open", _param0, _param1, _param2)
+func (_m *MockFileSystem) OpenMetadata(_param0 WriteType) (File, error) {
+	ret := _m.ctrl.Call(_m, "OpenMetadata", _param0)
 	ret0, _ := ret[0].(File)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-func (_mr *_MockFileSystemRecorder) Open(arg0, arg1, arg2 interface{}) *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "Open", arg0, arg1, arg2)
+func (_mr *_MockFileSystemRecorder) OpenMetadata(arg0 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "OpenMetadata", arg0)
 }
 
-func (_m *MockFileSystem) Walk(_param0 WalkFunc) error {
-	ret := _m.ctrl.Call(_m, "Walk", _param0)
-	ret0, _ := ret[0].(error)
-	return ret0
+func (_m *MockFileSystem) OpenMetadataBackup(_param0 WriteType) (File, error) {
+	ret := _m.ctrl.Call(_m, "OpenMetadataBackup", _param0)
+	ret0, _ := ret[0].(File)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
-func (_mr *_MockFileSystemRecorder) Walk(arg0 interface{}) *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "Walk", arg0)
+func (_mr *_MockFileSystemRecorder) OpenMetadataBackup(arg0 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "OpenMetadataBackup", arg0)
+}
+
+func (_m *MockFileSystem) OpenData(_param0 WriteType) (BlockFile, error) {
+	ret := _m.ctrl.Call(_m, "OpenData", _param0)
+	ret0, _ := ret[0].(BlockFile)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+func (_mr *_MockFileSystemRecorder) OpenData(arg0 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "OpenData", arg0)
 }
 
 // Mock of File interface
@@ -81,65 +93,84 @@ func (_mr *_MockFileRecorder) Close() *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "Close")
 }
 
-func (_m *MockFile) Stat() (os.FileInfo, error) {
-	ret := _m.ctrl.Call(_m, "Stat")
-	ret0, _ := ret[0].(os.FileInfo)
+func (_m *MockFile) ReadContents() ([]byte, error) {
+	ret := _m.ctrl.Call(_m, "ReadContents")
+	ret0, _ := ret[0].([]byte)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-func (_mr *_MockFileRecorder) Stat() *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "Stat")
+func (_mr *_MockFileRecorder) ReadContents() *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "ReadContents")
 }
 
-func (_m *MockFile) ReadAt(_param0 []byte, _param1 int64) (int, error) {
-	ret := _m.ctrl.Call(_m, "ReadAt", _param0, _param1)
-	ret0, _ := ret[0].(int)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-func (_mr *_MockFileRecorder) ReadAt(arg0, arg1 interface{}) *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "ReadAt", arg0, arg1)
-}
-
-func (_m *MockFile) WriteAt(_param0 []byte, _param1 int64) (int, error) {
-	ret := _m.ctrl.Call(_m, "WriteAt", _param0, _param1)
-	ret0, _ := ret[0].(int)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-func (_mr *_MockFileRecorder) WriteAt(arg0, arg1 interface{}) *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "WriteAt", arg0, arg1)
-}
-
-func (_m *MockFile) Sync() error {
-	ret := _m.ctrl.Call(_m, "Sync")
+func (_m *MockFile) WriteContents(_param0 []byte) error {
+	ret := _m.ctrl.Call(_m, "WriteContents", _param0)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-func (_mr *_MockFileRecorder) Sync() *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "Sync")
+func (_mr *_MockFileRecorder) WriteContents(arg0 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "WriteContents", arg0)
 }
 
-func (_m *MockFile) Truncate(_param0 int64) error {
-	ret := _m.ctrl.Call(_m, "Truncate", _param0)
+// Mock of BlockFile interface
+type MockBlockFile struct {
+	ctrl     *gomock.Controller
+	recorder *_MockBlockFileRecorder
+}
+
+// Recorder for MockBlockFile (not exported)
+type _MockBlockFileRecorder struct {
+	mock *MockBlockFile
+}
+
+func NewMockBlockFile(ctrl *gomock.Controller) *MockBlockFile {
+	mock := &MockBlockFile{ctrl: ctrl}
+	mock.recorder = &_MockBlockFileRecorder{mock}
+	return mock
+}
+
+func (_m *MockBlockFile) EXPECT() *_MockBlockFileRecorder {
+	return _m.recorder
+}
+
+func (_m *MockBlockFile) Close() error {
+	ret := _m.ctrl.Call(_m, "Close")
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-func (_mr *_MockFileRecorder) Truncate(arg0 interface{}) *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "Truncate", arg0)
+func (_mr *_MockBlockFileRecorder) Close() *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "Close")
 }
 
-func (_m *MockFile) PunchHole(off int64, n int64) error {
-	ret := _m.ctrl.Call(_m, "PunchHole", off, n)
+func (_m *MockBlockFile) ReadBlock(blknum uint32, block *server.Block) error {
+	ret := _m.ctrl.Call(_m, "ReadBlock", blknum, block)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-func (_mr *_MockFileRecorder) PunchHole(arg0, arg1 interface{}) *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "PunchHole", arg0, arg1)
+func (_mr *_MockBlockFileRecorder) ReadBlock(arg0, arg1 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "ReadBlock", arg0, arg1)
+}
+
+func (_m *MockBlockFile) WriteBlock(blknum uint32, block *server.Block) error {
+	ret := _m.ctrl.Call(_m, "WriteBlock", blknum, block)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+func (_mr *_MockBlockFileRecorder) WriteBlock(arg0, arg1 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "WriteBlock", arg0, arg1)
+}
+
+func (_m *MockBlockFile) EraseBlock(blknum uint32) error {
+	ret := _m.ctrl.Call(_m, "EraseBlock", blknum)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+func (_mr *_MockBlockFileRecorder) EraseBlock(arg0 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "EraseBlock", arg0)
 }

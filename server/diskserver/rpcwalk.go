@@ -42,8 +42,8 @@ func (srv *Server) Walk(in *proto.WalkRequest, stream proto.CAS_WalkServer) (err
 		reply := &proto.WalkReply{}
 		reply.Addr = used.Addr.String()
 		if re != nil || in.WantBlocks {
-			var block *server.Block
-			block, err = ReadBlock(srv.DataFile, used.Offset)
+			var block server.Block
+			err = srv.DataFile.ReadBlock(used.Offset, &block)
 			if err != nil {
 				errors = append(errors, err)
 				continue

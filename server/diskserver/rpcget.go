@@ -43,8 +43,8 @@ func (srv *Server) Get(ctx context.Context, in *proto.GetRequest) (out *proto.Ge
 	if !found {
 		return
 	}
-	var block *server.Block
-	if block, err = ReadBlock(srv.DataFile, blknum); err != nil {
+	var block server.Block
+	if err = srv.DataFile.ReadBlock(blknum, &block); err != nil {
 		err = grpc.Errorf(codes.Unknown, "%v", err)
 		return
 	}

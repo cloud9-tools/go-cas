@@ -13,14 +13,14 @@ const (
 	kFALLOC_FL_PUNCH_HOLE = 0x02
 )
 
-func (iot IOType) flag() int {
+func (iot ioType) flag() int {
 	switch iot {
-	case NormalIO:
+	case normalIO:
 		return 0
-	case DirectIO:
+	case directIO:
 		return unix.O_DIRECT
 	default:
-		panic("bad IOType")
+		panic("bad ioType")
 	}
 }
 

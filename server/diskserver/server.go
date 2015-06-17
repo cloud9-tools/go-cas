@@ -1,8 +1,6 @@
 package diskserver // import "github.com/chronos-tachyon/go-cas/server/diskserver"
 
 import (
-	"crypto/rand"
-	"io"
 	"sync"
 
 	"github.com/chronos-tachyon/go-cas/proto"
@@ -16,10 +14,9 @@ type Server struct {
 	Metadata     Metadata
 	MetadataFile fs.File
 	BackupFile   fs.File
-	DataFile     fs.File
+	DataFile     fs.BlockFile
 	FS           fs.FileSystem
 	Auther       auth.Auther
-	CRNG         io.Reader
 }
 
 func New(cfg Config) *Server {
@@ -30,16 +27,16 @@ func New(cfg Config) *Server {
 	filesystem := fs.NativeFileSystem{RootDir: cfg.Dir}
 	return &Server{
 		Metadata: Metadata{
-			NumTotal:     uint32(cfg.Limit),
+			NumTotal: uint32(cfg.Limit),
 		},
 		FS:     filesystem,
 		Auther: auther,
-		CRNG:   rand.Reader,
 	}
 }
 
 func (srv *Server) Open() (err error) {
-	var mf, bf, df fs.File
+	var mf, bf fs.File
+	var df fs.BlockFile
 	defer func() {
 		if err != nil {
 			if df != nil {
@@ -53,15 +50,15 @@ func (srv *Server) Open() (err error) {
 			}
 		}
 	}()
-	mf, err = srv.FS.Open("metadata", fs.ReadWrite, fs.NormalIO)
+	mf, err = srv.FS.OpenMetadata(fs.ReadWrite)
 	if err != nil {
 		return err
 	}
-	bf, err = srv.FS.Open("metadata~", fs.ReadWrite, fs.NormalIO)
+	bf, err = srv.FS.OpenMetadataBackup(fs.ReadWrite)
 	if err != nil {
 		return err
 	}
-	df, err = srv.FS.Open("data", fs.ReadWrite, fs.DirectIO)
+	df, err = srv.FS.OpenData(fs.ReadWrite)
 	if err != nil {
 		return err
 	}

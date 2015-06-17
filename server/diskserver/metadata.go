@@ -118,13 +118,12 @@ func (md *Metadata) Remove(slot int, addr server.Addr) (minUnused uint32, delete
 func ReadMetadata(primaryFile, secondaryFile fs.File, metadata *Metadata) (err error) {
 	var md Metadata
 	var raw []byte
-	var buf Buffer
-	var magic, numUsed, numFree uint32
+	var magic, numUsed, numFree, requiredLength uint32
 	var ver uint8
 	var n int
 	var reason error
 
-	raw, err = fs.LoadFile(primaryFile)
+	raw, err = primaryFile.ReadContents()
 	if err != nil {
 		reason = err
 		goto TryBackup
@@ -151,6 +150,12 @@ func ReadMetadata(primaryFile, secondaryFile fs.File, metadata *Metadata) (err e
 	md.NumTotal = binary.BigEndian.Uint32(raw[8:12])
 	numUsed = binary.BigEndian.Uint32(raw[12:16])
 	numFree = binary.BigEndian.Uint32(raw[16:20])
+
+	requiredLength = 20 + numUsed*(server.AddrSize+4) + numFree*4
+	if len(raw) < int(requiredLength) {
+		reason = fmt.Errorf("unexpected EOF -- missing %d bytes", int(requiredLength)-len(raw))
+		goto TryBackup
+	}
 	n = 20
 
 	md.Used = make(UsedBlockList, numUsed)
@@ -175,9 +180,8 @@ func ReadMetadata(primaryFile, secondaryFile fs.File, metadata *Metadata) (err e
 		}
 	}
 	md.BackupData = raw
-	buf.AssertEOF()
-	if buf.Err != nil {
-		reason = buf.Err
+	if n < len(raw) {
+		reason = fmt.Errorf("%d trailing bytes", len(raw)-n)
 		goto TryBackup
 	}
 
@@ -186,15 +190,11 @@ func ReadMetadata(primaryFile, secondaryFile fs.File, metadata *Metadata) (err e
 	return
 
 TryBackup:
-	fi, _ := primaryFile.Stat()
-	name := "??"
-	if fi != nil {
-		name = fmt.Sprintf("%q", fi.Name())
-	}
+	name := primaryFile.Name()
 	if err == nil {
-		log.Printf("warn: failed to load %s: %v", name, reason)
+		log.Printf("warn: failed to load %q: %v", name, reason)
 	} else {
-		log.Printf("error: failed to load %s: %v", name, reason)
+		log.Printf("error: failed to load %q: %v", name, reason)
 	}
 	if secondaryFile != nil {
 		if err2 := ReadMetadata(secondaryFile, nil, metadata); err2 == nil {
@@ -232,10 +232,10 @@ func WriteMetadata(primaryFile, secondaryFile fs.File, metadata *Metadata) error
 	}
 	log.Printf("WriteMetadata: %#v", metadata)
 
-	if err := fs.SaveFile(secondaryFile, metadata.BackupData); err != nil {
+	if err := secondaryFile.WriteContents(metadata.BackupData); err != nil {
 		return err
 	}
-	if err := fs.SaveFile(primaryFile, raw); err != nil {
+	if err := primaryFile.WriteContents(raw); err != nil {
 		return err
 	}
 	metadata.BackupData = raw

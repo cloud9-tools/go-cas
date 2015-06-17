@@ -2,49 +2,41 @@ package fs // import "github.com/chronos-tachyon/go-cas/server/fs"
 
 //go:generate mockgen -source=fs.go -package=fs -destination=mockfs.go
 //go:generate stringer -type=WriteType
-//go:generate stringer -type=IOType
 
 import (
 	"errors"
-	"io"
-	"os"
+
+	"github.com/chronos-tachyon/go-cas/server"
 )
 
 var ErrNotFound = errors.New("not found")
 var ErrNotSupported = errors.New("not supported")
+var ErrUnexpectedEOF = errors.New("unexpected EOF")
 
 type WriteType byte
-type IOType byte
 
 const (
 	ReadOnly WriteType = iota + 1
 	ReadWrite
 )
 
-const (
-	NormalIO IOType = iota + 1
-	DirectIO
-)
-
-type WalkFunc func(string, os.FileInfo, error) error
-
 type FileSystem interface {
-	Open(string, WriteType, IOType) (File, error)
-	Walk(WalkFunc) error
+	OpenMetadata(WriteType) (File, error)
+	OpenMetadataBackup(WriteType) (File, error)
+	OpenData(WriteType) (BlockFile, error)
 }
 
 type File interface {
+	Name() string
 	Close() error
-	Stat() (os.FileInfo, error)
-
-	ReadAt([]byte, int64) (int, error)
-
-	WriteAt([]byte, int64) (int, error)
-	Sync() error
-	Truncate(int64) error
-	PunchHole(off, n int64) error
+	ReadContents() ([]byte, error)
+	WriteContents([]byte) error
 }
 
-var _ io.Closer = File(nil)
-var _ io.ReaderAt = File(nil)
-var _ io.WriterAt = File(nil)
+type BlockFile interface {
+	Name() string
+	Close() error
+	ReadBlock(blknum uint32, block *server.Block) error
+	WriteBlock(blknum uint32, block *server.Block) error
+	EraseBlock(blknum uint32, shred bool) error
+}

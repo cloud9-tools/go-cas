@@ -66,7 +66,7 @@ func (srv *Server) Put(ctx context.Context, in *proto.PutRequest) (out *proto.Pu
 		err = grpc.Errorf(codes.Unknown, "%v", err)
 		return
 	}
-	if err = WriteBlock(srv.DataFile, blknum, &block); err != nil {
+	if err = srv.DataFile.WriteBlock(blknum, &block); err != nil {
 		err = grpc.Errorf(codes.Unknown, "%v", err)
 		return
 	}

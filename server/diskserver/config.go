@@ -9,9 +9,9 @@ import (
 )
 
 type Config struct {
-	Bind     string
-	Dir      string
-	Limit    uint64
+	Bind  string
+	Dir   string
+	Limit uint64
 }
 
 func (cfg *Config) AddFlags(fs *flag.FlagSet) {
