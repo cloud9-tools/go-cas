@@ -1,9 +1,9 @@
 package cacheserver // import "github.com/chronos-tachyon/go-cas/server/cacheserver"
 
 import (
+	"math/rand"
 	"sort"
 	"sync"
-	"math/rand"
 
 	"github.com/chronos-tachyon/go-cas/internal"
 	"github.com/chronos-tachyon/go-cas/server"

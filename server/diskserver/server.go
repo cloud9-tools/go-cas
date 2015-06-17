@@ -1,22 +1,21 @@
 package diskserver // import "github.com/chronos-tachyon/go-cas/server/diskserver"
 
 import (
-	"path"
+	"sync"
 
-	"github.com/chronos-tachyon/go-cas/internal"
 	"github.com/chronos-tachyon/go-cas/proto"
 	"github.com/chronos-tachyon/go-cas/server"
 	"github.com/chronos-tachyon/go-cas/server/auth"
 	"github.com/chronos-tachyon/go-cas/server/fs"
-	"github.com/chronos-tachyon/go-multierror"
 )
 
 type Server struct {
-	Auther       auth.Auther
+	Mutex        sync.Mutex
+	Metadata     Metadata
+	MetadataFile fs.File
+	BackupFile   fs.File
 	FS           fs.FileSystem
-	Limit        uint64
-	Depth        uint8
-	MaxSlotsLog2 uint8
+	Auther       auth.Auther
 }
 
 func New(cfg Config) *Server {
@@ -30,117 +29,73 @@ func New(cfg Config) *Server {
 		i++
 	}
 	return &Server{
-		Auther:       auther,
-		FS:           filesystem,
-		Limit:        cfg.Limit,
-		Depth:        uint8(cfg.Depth),
-		MaxSlotsLog2: i,
+		Metadata: Metadata{
+			NumTotal:     uint32(cfg.Limit),
+			Depth:        uint8(cfg.Depth),
+			Width:        uint8(cfg.Width),
+			MaxSlotsLog2: i,
+		},
+		FS:     filesystem,
+		Auther: auther,
 	}
 }
 
-func (s *Server) Open(addr server.Addr, wt fs.WriteType) (*Handle, error) {
-	internal.Debugf("Open addr=%q wt=%v", addr, wt)
-	h := addr.String()
-	n := 0
-	var segments []string
-	for d := uint8(0); d < s.Depth; d++ {
-		segments = append(segments, h[n:n+2])
-		n += 2
-	}
-	segments = append(segments, h[n:n+4])
-	base := path.Join(segments...)
-
-	var fh0, fh1, fh2 fs.File
-	var keepOpen bool
-	var err error
-
+func (srv *Server) Open() (err error) {
+	var mf, bf fs.File
 	defer func() {
-		if !keepOpen {
-			if fh2 != nil {
-				fh2.Close()
+		if err != nil {
+			if bf != nil {
+				bf.Close()
 			}
-			if fh1 != nil {
-				fh1.Close()
-			}
-			if fh0 != nil {
-				fh0.Close()
+			if mf != nil {
+				mf.Close()
 			}
 		}
 	}()
+	mf, err = srv.FS.Open("metadata", fs.ReadWrite, fs.NormalIO)
+	if err != nil {
+		return err
+	}
+	bf, err = srv.FS.Open("metadata~", fs.ReadWrite, fs.NormalIO)
+	if err != nil {
+		return err
+	}
+	srv.BackupFile = bf
+	srv.MetadataFile = mf
 
-	fh0, err = s.FS.Open(base+".index", wt, fs.NormalIO)
-	if err != nil && err != fs.ErrNotFound {
-		internal.Debugf("FAIL Open index I/O err=%v", err)
-		return nil, err
+	var md *Metadata
+	if md, err = ReadMetadata(srv.MetadataFile, srv.BackupFile); err != nil {
+		return
 	}
-	fh1, err = s.FS.Open(base+".index~", wt, fs.NormalIO)
-	if err != nil && err != fs.ErrNotFound {
-		internal.Debugf("FAIL Open backup I/O err=%v", err)
-		return nil, err
+	if err != nil {
+		return
 	}
-	fh2, err = s.FS.Open(base+".data", wt, fs.DirectIO)
-	if err != nil && err != fs.ErrNotFound {
-		internal.Debugf("FAIL Open block I/O err=%v", err)
-		return nil, err
+	if md != nil {
+		srv.Metadata = *md
 	}
-
-	keepOpen = true
-	return &Handle{
-		IndexFile:  fh0,
-		BackupFile: fh1,
-		BlockFile:  fh2,
-		MaxSlots:   1 << s.MaxSlotsLog2,
-		Addr:       addr,
-	}, nil
+	/*
+		if err = WriteMetadata(srv.MetadataFile, srv.BackupFile, &srv.Metadata); err != nil {
+			return
+		}
+	*/
+	return
 }
 
-type Handle struct {
-	IndexFile   fs.File
-	BackupFile  fs.File
-	BackupBytes []byte
-	BlockFile   fs.File
-	MaxSlots    uint32
-	Addr        server.Addr
+func (srv *Server) Close() error {
+	srv.BackupFile.Close()
+	return srv.MetadataFile.Close()
 }
 
-func (h *Handle) Close() error {
-	err := multierror.Of(
-		h.IndexFile.Close(),
-		h.BackupFile.Close(),
-		h.BlockFile.Close())
-	internal.Debugf("Close err=%v", err)
-	return err
-}
-
-func loadFile(f fs.File) ([]byte, error) {
-	if f == nil {
+func (srv *Server) OpenBlock(addr server.Addr, wt fs.WriteType) (fs.File, error) {
+	p := srv.Metadata.BlockPath(addr)
+	f, err := srv.FS.Open(p, wt, fs.DirectIO)
+	if err == fs.ErrNotFound {
 		return nil, nil
 	}
-	fi, err := f.Stat()
 	if err != nil {
 		return nil, err
 	}
-	raw := make([]byte, fi.Size())
-	err = internal.ReadExactlyAt(f, raw, 0)
-	if err != nil {
-		return nil, err
-	}
-	return raw, nil
-}
-func saveFile(f fs.File, raw []byte) error {
-	err := f.Truncate(int64(len(raw)))
-	if err != nil {
-		return err
-	}
-	err = internal.WriteExactlyAt(f, raw, 0)
-	if err != nil {
-		return err
-	}
-	err = f.Sync()
-	if err != nil {
-		return err
-	}
-	return nil
+	return f, nil
 }
 
 var _ proto.CASServer = (*Server)(nil)

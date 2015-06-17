@@ -1,11 +1,12 @@
 package diskserver // import "github.com/chronos-tachyon/go-cas/server/diskserver"
 
 import (
+	"log"
+
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 
-	"github.com/chronos-tachyon/go-cas/internal"
 	"github.com/chronos-tachyon/go-cas/proto"
 	"github.com/chronos-tachyon/go-cas/server"
 	"github.com/chronos-tachyon/go-cas/server/auth"
@@ -13,45 +14,58 @@ import (
 )
 
 func (srv *Server) Get(ctx context.Context, in *proto.GetRequest) (out *proto.GetReply, err error) {
-	if err := srv.Auther.Auth(ctx, auth.Get).Err(); err != nil {
-		return nil, err
-	}
-
-	var addr server.Addr
-	if err = addr.Parse(in.Addr); err != nil {
-		return nil, grpc.Errorf(codes.InvalidArgument, "%v", err)
-	}
-
 	out = &proto.GetReply{}
-	internal.Debugf("-- begin Get: in=%v", in)
+	log.Printf("-- BEGIN Get: in=%#v", in)
 	defer func() {
 		if err != nil {
 			out = nil
 		}
-		internal.Debugf("-- end Get: out=%v err=%v", out, err)
+		sanitizedOut := *out
+		if len(sanitizedOut.Block) > 0 {
+			sanitizedOut.Block = []byte{}
+		}
+		log.Printf("-- END Get: out=%#v err=%v", sanitizedOut, err)
 	}()
 
-	h, err := srv.Open(addr, fs.ReadOnly)
-	if err != nil {
-		return nil, grpc.Errorf(codes.Unknown, "%v", err)
+	if err = srv.Auther.Auth(ctx, auth.Get).Err(); err != nil {
+		return
 	}
-	defer h.Close()
-	index, err := h.LoadIndex()
-	if err != nil {
-		return nil, grpc.Errorf(codes.Unknown, "%v", err)
+
+	var addr server.Addr
+	if err = addr.Parse(in.Addr); err != nil {
+		err = grpc.Errorf(codes.InvalidArgument, "%v", err)
+		return
 	}
-	_, blknum, found := index.Search(addr)
+
+	srv.Metadata.Mutex.RLock()
+	defer srv.Metadata.Mutex.RUnlock()
+
+	var f fs.File
+	if f, err = srv.OpenBlock(addr, fs.ReadOnly); err != nil {
+		err = grpc.Errorf(codes.Unknown, "%v", err)
+		return
+	}
+	if f == nil {
+		return
+	}
+	defer f.Close()
+
+	blknum, found := srv.Metadata.Search(addr)
 	if !found {
-		return out, nil
+		return
 	}
-	block := &server.Block{}
-	err = h.LoadBlock(block, blknum)
-	if err != nil {
-		return nil, grpc.Errorf(codes.Unknown, "%v", err)
+	var block *server.Block
+	if block, err = ReadBlock(f, blknum); err != nil {
+		err = grpc.Errorf(codes.Unknown, "%v", err)
+		return
+	}
+	if err = server.Verify(addr, block.Addr()); err != nil {
+		err = grpc.Errorf(codes.DataLoss, "%v", err)
+		return
 	}
 	out.Found = true
 	if !in.NoBlock {
 		out.Block = block[:]
 	}
-	return out, nil
+	return
 }

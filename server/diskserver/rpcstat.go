@@ -1,35 +1,32 @@
 package diskserver // import "github.com/chronos-tachyon/go-cas/server/diskserver"
 
 import (
-	"golang.org/x/net/context"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
+	"log"
 
-	"github.com/chronos-tachyon/go-cas/internal"
+	"golang.org/x/net/context"
+
 	"github.com/chronos-tachyon/go-cas/proto"
 	"github.com/chronos-tachyon/go-cas/server/auth"
 )
 
 func (srv *Server) Stat(ctx context.Context, in *proto.StatRequest) (out *proto.StatReply, err error) {
-	if err := srv.Auther.Auth(ctx, auth.StatFS).Err(); err != nil {
-		return nil, err
-	}
-
 	out = &proto.StatReply{}
-	internal.Debugf("-- begin Stat: in=%v", in)
+	log.Printf("-- BEGIN Stat: in=%#v", in)
 	defer func() {
 		if err != nil {
 			out = nil
 		}
-		internal.Debugf("-- end Stat: out=%v err=%v", out, err)
+		log.Printf("-- END Stat: out=%#v err=%v", out, err)
 	}()
-	meta, err := srv.LoadMetadata()
-	if err != nil {
-		return nil, grpc.Errorf(codes.Unknown, "%v", err)
+
+	if err = srv.Auther.Auth(ctx, auth.StatFS).Err(); err != nil {
+		return
 	}
-	*out = proto.StatReply{
-		BlocksFree: int64(srv.Limit - meta.Used),
-		BlocksUsed: int64(meta.Used),
-	}
-	return out, nil
+
+	srv.Metadata.Mutex.RLock()
+	defer srv.Metadata.Mutex.RUnlock()
+
+	out.BlocksUsed = int64(len(srv.Metadata.Used))
+	out.BlocksFree = int64(srv.Metadata.NumTotal) - out.BlocksUsed
+	return
 }

@@ -1,11 +1,12 @@
 package diskserver // import "github.com/chronos-tachyon/go-cas/server/diskserver"
 
 import (
+	"log"
+
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 
-	"github.com/chronos-tachyon/go-cas/internal"
 	"github.com/chronos-tachyon/go-cas/proto"
 	"github.com/chronos-tachyon/go-cas/server"
 	"github.com/chronos-tachyon/go-cas/server/auth"
@@ -13,81 +14,71 @@ import (
 )
 
 func (srv *Server) Put(ctx context.Context, in *proto.PutRequest) (out *proto.PutReply, err error) {
-	if err := srv.Auther.Auth(ctx, auth.Put).Err(); err != nil {
-		return nil, err
-	}
-
-	var block server.Block
-	if err = block.Pad(in.Block); err != nil {
-		return nil, grpc.Errorf(codes.InvalidArgument, "%v", err)
-	}
-	addr := block.Addr()
-	if in.Addr != "" {
-		var expected server.Addr
-		if err = expected.Parse(in.Addr); err != nil {
-			return nil, grpc.Errorf(codes.InvalidArgument, "%v", err)
-		}
-		if err = server.Verify(expected, addr); err != nil {
-			return nil, grpc.Errorf(codes.DataLoss, "%v", err)
-		}
-	}
-
 	out = &proto.PutReply{}
-	internal.Debugf("-- begin Put: in=%v", in)
+	sanitizedIn := *in
+	if len(sanitizedIn.Block) > 0 {
+		sanitizedIn.Block = []byte{}
+	}
+	log.Printf("-- BEGIN Put: in=%#v", sanitizedIn)
 	defer func() {
 		if err != nil {
 			out = nil
 		}
-		internal.Debugf("-- end Put: out=%v err=%v", out, err)
+		log.Printf("-- END Put: out=%#v err=%v", out, err)
 	}()
 
-	h, err := srv.Open(addr, fs.ReadWrite)
+	if err = srv.Auther.Auth(ctx, auth.Put).Err(); err != nil {
+		return
+	}
+
+	var block server.Block
+	if err = block.Pad(in.Block); err != nil {
+		err = grpc.Errorf(codes.InvalidArgument, "%v", err)
+		return
+	}
+
+	addr := block.Addr()
+	if in.Addr != "" {
+		var expected server.Addr
+		if err = expected.Parse(in.Addr); err != nil {
+			err = grpc.Errorf(codes.InvalidArgument, "%v", err)
+			return
+		}
+		if err = server.Verify(expected, addr); err != nil {
+			err = grpc.Errorf(codes.DataLoss, "%v", err)
+			return
+		}
+	}
+	out.Addr = addr.String()
+
+	srv.Metadata.Mutex.Lock()
+	defer srv.Metadata.Mutex.Unlock()
+
+	var f fs.File
+	f, err = srv.OpenBlock(addr, fs.ReadWrite)
 	if err != nil {
-		return nil, grpc.Errorf(codes.Unknown, "%v", err)
+		err = grpc.Errorf(codes.Unknown, "%v", err)
+		return
 	}
-	defer h.Close()
-	index, err := h.LoadIndex()
-	if err != nil {
-		return nil, grpc.Errorf(codes.Unknown, "%v", err)
+	defer f.Close()
+
+	_, found := srv.Metadata.Search(addr)
+	if found {
+		return
 	}
-	if _, _, found := index.Search(addr); found {
-		return out, nil
-	}
-	free, found := index.Take()
+	blknum, found := srv.Metadata.Insert(addr)
 	if !found {
-		return nil, grpc.Errorf(codes.ResourceExhausted, "slots exhausted")
+		err = grpc.Errorf(codes.ResourceExhausted, "storage exhausted")
+		return
 	}
-	index.Insert(addr, free)
-
-	var overLimit bool
-	err = srv.SaveMetadata(func(meta *Metadata) {
-		overLimit = meta.Used >= srv.Limit
-		if overLimit {
-			internal.Debug("over limit")
-		} else {
-			meta.Used++
-		}
-	})
-	if err != nil {
-		return nil, grpc.Errorf(codes.Unknown, "%v", err)
+	if err = WriteMetadata(srv.MetadataFile, srv.BackupFile, &srv.Metadata); err != nil {
+		err = grpc.Errorf(codes.Unknown, "%v", err)
+		return
 	}
-	if overLimit {
-		return nil, grpc.Errorf(codes.ResourceExhausted, "limit exhausted")
-	}
-	defer func() {
-		if !out.Inserted {
-			srv.SaveMetadata(func(meta *Metadata) {
-				meta.Used--
-			})
-		}
-	}()
-
-	if err = h.SaveBlock(&block, free); err != nil {
-		return nil, grpc.Errorf(codes.Unknown, "%v", err)
-	}
-	if err = h.SaveIndex(index); err != nil {
-		return nil, grpc.Errorf(codes.Unknown, "%v", err)
+	if err = WriteBlock(f, blknum, &block); err != nil {
+		err = grpc.Errorf(codes.Unknown, "%v", err)
+		return
 	}
 	out.Inserted = true
-	return out, nil
+	return
 }
