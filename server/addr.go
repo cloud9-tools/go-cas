@@ -11,8 +11,10 @@ const addrParseFmtPrefix = "go-cas/server: failed to parse %q as Addr: "
 const addrParseLenFmt = addrParseFmtPrefix + "expected length 40, got length %d"
 const addrParseDecodeFmt = addrParseFmtPrefix + "%v"
 
+const AddrSize = 20
+
 // Addr is the "address" (hash) of a CAS block.
-type Addr [20]byte
+type Addr [AddrSize]byte
 
 // Clear sets this Addr to the zero Addr.
 func (addr *Addr) Clear() {
