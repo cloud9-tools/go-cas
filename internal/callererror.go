@@ -25,11 +25,11 @@ func (err CallerError) Error() string {
 	var buf bytes.Buffer
 	fmt.Fprintf(&buf, "%v\n", err.Cause)
 	for _, pc := range err.PC {
-		f := runtime.FuncForPC(pc-1)
+		f := runtime.FuncForPC(pc - 1)
 		name := f.Name()
-		file, line := f.FileLine(pc-1)
+		file, line := f.FileLine(pc - 1)
 		entry := f.Entry()
-		fmt.Fprintf(&buf, "\t%s %s:%d (+%#x)\n", name, filepath.Base(file), line, pc - entry)
+		fmt.Fprintf(&buf, "\t%s %s:%d (+%#x)\n", name, filepath.Base(file), line, pc-entry)
 	}
 	return buf.String()
 }
