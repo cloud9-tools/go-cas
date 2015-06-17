@@ -2,6 +2,7 @@ package diskserver // import "github.com/chronos-tachyon/go-cas/server/diskserve
 
 import (
 	"encoding/binary"
+	"fmt"
 	"log"
 	"path"
 	"sort"
@@ -158,20 +159,22 @@ func (md *Metadata) Remove(addr server.Addr) bool {
 	return true
 }
 
-func ReadMetadata(primaryFile, secondaryFile fs.File) (metadata *Metadata, err error) {
+func ReadMetadata(primaryFile, secondaryFile fs.File, metadata *Metadata) (err error) {
 	var md Metadata
 	var raw []byte
 	var buf Buffer
 	var magic, numUsed, numFree uint32
 	var ver uint8
 	var n int
+	var reason error
 
 	raw, err = fs.LoadFile(primaryFile)
 	if err != nil {
+		reason = err
 		goto TryBackup
 	}
-	log.Printf("Read: %#v", raw)
 	if len(raw) < 20 {
+		reason = fmt.Errorf("file is too short: expected >= 20 bytes, got %d bytes", len(raw))
 		goto TryBackup
 	}
 
@@ -183,11 +186,16 @@ func ReadMetadata(primaryFile, secondaryFile fs.File) (metadata *Metadata, err e
 	md.NumTotal = binary.BigEndian.Uint32(raw[8:12])
 	numUsed = binary.BigEndian.Uint32(raw[12:16])
 	numFree = binary.BigEndian.Uint32(raw[16:20])
-	if magic != metadataMagic || ver != metadataVersion {
+	if magic != metadataMagic {
+		reason = fmt.Errorf("file has incorrect magic: expected %08x, got %08x", metadataMagic, magic)
+		goto TryBackup
+	}
+	if ver != metadataVersion {
+		reason = fmt.Errorf("file has incorrect version: expected %d, got %d", metadataVersion, ver)
 		goto TryBackup
 	}
 	if dw := md.Depth + md.Width; dw > server.AddrSize {
-		log.Printf("warn: d=%d w=%d is too deep", md.Depth, md.Width)
+		log.Printf("warn: Depth=%d Width=%d is too deep", md.Depth, md.Width)
 		dw = server.AddrSize
 		if md.Depth > server.AddrSize {
 			md.Depth = server.AddrSize
@@ -197,6 +205,7 @@ func ReadMetadata(primaryFile, secondaryFile fs.File) (metadata *Metadata, err e
 		}
 	}
 	if md.MaxSlotsLog2 > 16 {
+		log.Printf("warn: MaxSlotsLog2=%d is too large", md.MaxSlotsLog2)
 		md.MaxSlotsLog2 = 16
 	}
 	md.Used = make(UsedBlockList, numUsed)
@@ -223,71 +232,83 @@ func ReadMetadata(primaryFile, secondaryFile fs.File) (metadata *Metadata, err e
 			fbl.List = append(fbl.List, offset)
 		}
 	}
+	md.BackupData = raw
 	buf.AssertEOF()
 	if buf.Err != nil {
-		log.Printf("failed to load metadata: %v", buf.Err)
+		reason = buf.Err
 		goto TryBackup
 	}
 
-	md.BackupData = raw
 	metadata = &md
+	log.Printf("info: ReadMetadata: %#v", md)
 	return
 
 TryBackup:
+	fi, _ := primaryFile.Stat()
+	name := "??"
+	if fi != nil {
+		name = fmt.Sprintf("%q", fi.Name())
+	}
+	if err == nil {
+		log.Printf("warn: failed to load %s: %v", name, reason)
+	} else {
+		log.Printf("error: failed to load %s: %v", name, reason)
+	}
 	if secondaryFile != nil {
-		if metadata2, err2 := ReadMetadata(secondaryFile, nil); err2 != nil {
-			metadata = metadata2
+		if err2 := ReadMetadata(secondaryFile, nil, metadata); err2 == nil {
+			err = nil
 		}
+	} else if err == nil {
+		log.Printf("info: ReadMetadata: %#v", *metadata)
 	}
 	return
 }
 
-func WriteMetadata(primaryFile, secondaryFile fs.File, md *Metadata) error {
+func WriteMetadata(primaryFile, secondaryFile fs.File, metadata *Metadata) error {
 	const maxuint32 = ^uint32(0)
-	numUsed := uint(len(md.Used))
+	numUsed := uint(len(metadata.Used))
 	numFree := uint(0)
-	for _, free := range md.Free {
+	for _, free := range metadata.Free {
 		numFree += uint(len(free.List))
 	}
 
 	if numUsed > uint(maxuint32) {
-		panic("md.Used contains too many items to save")
+		panic("metadata.Used contains too many items to save")
 	}
 	if numFree > uint(maxuint32) {
-		panic("md.Free contains too many items to save")
+		panic("metadata.Free contains too many items to save")
 	}
 
 	raw := make([]byte, 20)
 	binary.BigEndian.PutUint32(raw[0:4], metadataMagic)
 	raw[4] = metadataVersion
-	raw[5] = md.Depth
-	raw[6] = md.Width
-	raw[7] = md.MaxSlotsLog2
-	binary.BigEndian.PutUint32(raw[8:12], md.NumTotal)
+	raw[5] = metadata.Depth
+	raw[6] = metadata.Width
+	raw[7] = metadata.MaxSlotsLog2
+	binary.BigEndian.PutUint32(raw[8:12], metadata.NumTotal)
 	binary.BigEndian.PutUint32(raw[12:16], uint32(numUsed))
 	binary.BigEndian.PutUint32(raw[16:20], uint32(numFree))
-
 	var tmp [4]byte
-	for _, used := range md.Used {
+	for _, used := range metadata.Used {
 		binary.BigEndian.PutUint32(tmp[:], used.Offset)
 		raw = append(raw, used.Addr[:]...)
 		raw = append(raw, tmp[:]...)
 	}
-	for _, free := range md.Free {
+	for _, free := range metadata.Free {
 		for _, offset := range free.List {
 			binary.BigEndian.PutUint32(tmp[:], offset)
 			raw = append(raw, free.PartialAddr[:]...)
 			raw = append(raw, tmp[:]...)
 		}
 	}
-	log.Printf("Write: %#v", raw)
+	log.Printf("WriteMetadata: %#v", metadata)
 
-	if err := fs.SaveFile(secondaryFile, md.BackupData); err != nil {
+	if err := fs.SaveFile(secondaryFile, metadata.BackupData); err != nil {
 		return err
 	}
 	if err := fs.SaveFile(primaryFile, raw); err != nil {
 		return err
 	}
-	md.BackupData = raw
+	metadata.BackupData = raw
 	return nil
 }

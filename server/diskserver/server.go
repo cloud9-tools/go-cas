@@ -1,6 +1,8 @@
 package diskserver // import "github.com/chronos-tachyon/go-cas/server/diskserver"
 
 import (
+	"crypto/rand"
+	"io"
 	"sync"
 
 	"github.com/chronos-tachyon/go-cas/proto"
@@ -16,6 +18,7 @@ type Server struct {
 	BackupFile   fs.File
 	FS           fs.FileSystem
 	Auther       auth.Auther
+	CRNG         io.Reader
 }
 
 func New(cfg Config) *Server {
@@ -37,6 +40,7 @@ func New(cfg Config) *Server {
 		},
 		FS:     filesystem,
 		Auther: auther,
+		CRNG:   rand.Reader,
 	}
 }
 
@@ -63,21 +67,12 @@ func (srv *Server) Open() (err error) {
 	srv.BackupFile = bf
 	srv.MetadataFile = mf
 
-	var md *Metadata
-	if md, err = ReadMetadata(srv.MetadataFile, srv.BackupFile); err != nil {
+	if err = ReadMetadata(srv.MetadataFile, srv.BackupFile, &srv.Metadata); err != nil {
 		return
 	}
-	if err != nil {
+	if err = WriteMetadata(srv.MetadataFile, srv.BackupFile, &srv.Metadata); err != nil {
 		return
 	}
-	if md != nil {
-		srv.Metadata = *md
-	}
-	/*
-		if err = WriteMetadata(srv.MetadataFile, srv.BackupFile, &srv.Metadata); err != nil {
-			return
-		}
-	*/
 	return
 }
 

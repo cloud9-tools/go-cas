@@ -18,6 +18,7 @@ type Config struct {
 }
 
 func (cfg *Config) AddFlags(fs *flag.FlagSet) {
+	const l = 1024
 	const d = 4
 	const w = 2
 	const s = 8192
@@ -26,7 +27,7 @@ func (cfg *Config) AddFlags(fs *flag.FlagSet) {
 		"address to listen on")
 	fs.StringVar(&cfg.Dir, "dir", "",
 		"directory in which to store CAS blocks")
-	fs.Uint64Var(&cfg.Limit, "limit", 0,
+	fs.Uint64Var(&cfg.Limit, "limit", l,
 		"maximum number of blocks to store on diskserver "+
 			"("+common.BlockSizeHuman+" each)")
 	fs.UintVar(&cfg.Depth, "depth", d,
@@ -38,7 +39,7 @@ func (cfg *Config) AddFlags(fs *flag.FlagSet) {
 
 	fs.StringVar(&cfg.Bind, "B", "", "alias for --bind")
 	fs.StringVar(&cfg.Dir, "D", "", "alias for --dir")
-	fs.Uint64Var(&cfg.Limit, "l", 0, "alias for --limit")
+	fs.Uint64Var(&cfg.Limit, "l", l, "alias for --limit")
 	fs.UintVar(&cfg.Depth, "d", d, "alias for --depth")
 	fs.UintVar(&cfg.Width, "w", w, "alias for --width")
 	fs.UintVar(&cfg.MaxSlots, "s", s, "alias for --max_slots")
@@ -50,9 +51,6 @@ func (cfg *Config) Validate() error {
 	}
 	if cfg.Dir == "" {
 		return fmt.Errorf("missing required flag: --dir")
-	}
-	if cfg.Limit == 0 {
-		return fmt.Errorf("missing required flag: --limit")
 	}
 	if _, _, err := common.ParseDialSpec(cfg.Bind); err != nil {
 		return fmt.Errorf("invalid flag --bind=%q: %v", cfg.Bind, err)

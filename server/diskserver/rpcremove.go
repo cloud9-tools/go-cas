@@ -49,7 +49,7 @@ func (srv *Server) Remove(ctx context.Context, in *proto.RemoveRequest) (out *pr
 		return
 	}
 
-	if err = EraseBlock(f, blknum, in.Shred); err != nil {
+	if err = EraseBlock(f, blknum, in.Shred, srv.CRNG); err != nil {
 		err = grpc.Errorf(codes.Unknown, "%v", err)
 		return
 	}
