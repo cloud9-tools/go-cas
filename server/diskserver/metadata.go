@@ -17,7 +17,6 @@ const maxuint32 = ^uint32(0)
 
 type Metadata struct {
 	Mutex      sync.RWMutex
-	NumTotal   uint32
 	MinUnused  uint32
 	Used       UsedBlockList
 	Free       FreeBlockList
@@ -25,8 +24,8 @@ type Metadata struct {
 }
 type UsedBlockList []UsedBlock
 type UsedBlock struct {
-	Addr   server.Addr
-	Offset uint32
+	Addr        server.Addr
+	BlockNumber uint32
 }
 type FreeBlockList []uint32
 
@@ -43,19 +42,15 @@ func (md *Metadata) Search(addr server.Addr) (slot int, blknum uint32, found boo
 		return !md.Used[i].Addr.Less(addr)
 	})
 	if slot < len(md.Used) && md.Used[slot].Addr == addr {
-		blknum = md.Used[slot].Offset
+		blknum = md.Used[slot].BlockNumber
 		found = true
 	}
 	return
 }
 
 func (md *Metadata) Insert(slot int, addr server.Addr) (blknum uint32, inserted bool) {
-	if uint(len(md.Used)) >= uint(md.NumTotal) {
-		return
-	}
-
 	if slot < len(md.Used) && md.Used[slot].Addr == addr {
-		blknum = md.Used[slot].Offset
+		blknum = md.Used[slot].BlockNumber
 		return
 	}
 
@@ -70,8 +65,8 @@ func (md *Metadata) Insert(slot int, addr server.Addr) (blknum uint32, inserted 
 	}
 
 	used := UsedBlock{
-		Addr:   addr,
-		Offset: blknum,
+		Addr:        addr,
+		BlockNumber: blknum,
 	}
 
 	md.Used = append(md.Used, used)
@@ -92,7 +87,7 @@ func (md *Metadata) Remove(slot int, addr server.Addr) (minUnused uint32, delete
 		return maxuint32, false
 	}
 
-	blknum := md.Used[slot].Offset
+	blknum := md.Used[slot].BlockNumber
 	for i := slot; i < max; i++ {
 		md.Used.Swap(i, i+1)
 	}
@@ -103,17 +98,19 @@ func (md *Metadata) Remove(slot int, addr server.Addr) (minUnused uint32, delete
 
 	tmp := append(md.Free, blknum)
 	keep := []uint32(nil)
-	for _, offset := range tmp {
-		if offset == md.MinUnused-1 {
+	for _, blknum := range tmp {
+		if blknum == md.MinUnused-1 {
 			md.MinUnused--
 		} else {
-			keep = append(keep, offset)
+			keep = append(keep, blknum)
 		}
 	}
 	md.Free = keep
 
 	return md.MinUnused, true
 }
+
+const metadataFormatLen = 16
 
 func ReadMetadata(primaryFile, secondaryFile fs.File, metadata *Metadata) (err error) {
 	var md Metadata
@@ -128,8 +125,8 @@ func ReadMetadata(primaryFile, secondaryFile fs.File, metadata *Metadata) (err e
 		reason = err
 		goto TryBackup
 	}
-	if len(raw) < 20 {
-		reason = fmt.Errorf("file is too short: expected >= 20 bytes, got %d bytes", len(raw))
+	if len(raw) < metadataFormatLen {
+		reason = fmt.Errorf("file is too short: expected >= %d bytes, got %d bytes", metadataFormatLen, len(raw))
 		goto TryBackup
 	}
 
@@ -147,36 +144,35 @@ func ReadMetadata(primaryFile, secondaryFile fs.File, metadata *Metadata) (err e
 		reason = fmt.Errorf("file has non-zero reserved bytes")
 		goto TryBackup
 	}
-	md.NumTotal = binary.BigEndian.Uint32(raw[8:12])
-	numUsed = binary.BigEndian.Uint32(raw[12:16])
-	numFree = binary.BigEndian.Uint32(raw[16:20])
+	numUsed = binary.BigEndian.Uint32(raw[8:12])
+	numFree = binary.BigEndian.Uint32(raw[12:16])
 
-	requiredLength = 20 + numUsed*(server.AddrSize+4) + numFree*4
+	requiredLength = metadataFormatLen + numUsed*(server.AddrSize+4) + numFree*4
 	if len(raw) < int(requiredLength) {
 		reason = fmt.Errorf("unexpected EOF -- missing %d bytes", int(requiredLength)-len(raw))
 		goto TryBackup
 	}
-	n = 20
+	n = metadataFormatLen
 
 	md.Used = make(UsedBlockList, numUsed)
 	for slot := range md.Used {
 		var addr server.Addr
 		copy(addr[:], raw[n:n+server.AddrSize])
 		n += server.AddrSize
-		offset := binary.BigEndian.Uint32(raw[n : n+4])
+		blknum := binary.BigEndian.Uint32(raw[n : n+4])
 		n += 4
 		md.Used[slot].Addr = addr
-		md.Used[slot].Offset = offset
-		if offset >= md.MinUnused {
-			md.MinUnused = offset + 1
+		md.Used[slot].BlockNumber = blknum
+		if blknum >= md.MinUnused {
+			md.MinUnused = blknum + 1
 		}
 	}
 	md.Free = make(FreeBlockList, 0, numFree)
 	for i := uint32(0); i < numFree; i++ {
-		offset := binary.BigEndian.Uint32(raw[n : n+4])
+		blknum := binary.BigEndian.Uint32(raw[n : n+4])
 		n += 4
-		if offset < md.MinUnused {
-			md.Free = append(md.Free, offset)
+		if blknum < md.MinUnused {
+			md.Free = append(md.Free, blknum)
 		}
 	}
 	md.BackupData = raw
@@ -214,20 +210,19 @@ func WriteMetadata(primaryFile, secondaryFile fs.File, metadata *Metadata) error
 		panic("metadata.Free contains too many items to save")
 	}
 
-	raw := make([]byte, 20)
+	raw := make([]byte, metadataFormatLen)
 	binary.BigEndian.PutUint32(raw[0:4], metadataMagic)
 	raw[4] = metadataVersion
-	binary.BigEndian.PutUint32(raw[8:12], metadata.NumTotal)
-	binary.BigEndian.PutUint32(raw[12:16], uint32(len(metadata.Used)))
-	binary.BigEndian.PutUint32(raw[16:20], uint32(len(metadata.Free)))
+	binary.BigEndian.PutUint32(raw[8:12], uint32(len(metadata.Used)))
+	binary.BigEndian.PutUint32(raw[12:16], uint32(len(metadata.Free)))
 	var tmp [4]byte
 	for _, used := range metadata.Used {
-		binary.BigEndian.PutUint32(tmp[:], used.Offset)
+		binary.BigEndian.PutUint32(tmp[:], used.BlockNumber)
 		raw = append(raw, used.Addr[:]...)
 		raw = append(raw, tmp[:]...)
 	}
-	for _, offset := range metadata.Free {
-		binary.BigEndian.PutUint32(tmp[:], offset)
+	for _, blknum := range metadata.Free {
+		binary.BigEndian.PutUint32(tmp[:], blknum)
 		raw = append(raw, tmp[:]...)
 	}
 	log.Printf("WriteMetadata: %#v", metadata)

@@ -12,11 +12,12 @@ import (
 type Server struct {
 	Mutex        sync.Mutex
 	Metadata     Metadata
+	BlocksTotal  uint32
+	Auther       auth.Auther
+	FS           fs.FileSystem
 	MetadataFile fs.File
 	BackupFile   fs.File
 	DataFile     fs.BlockFile
-	FS           fs.FileSystem
-	Auther       auth.Auther
 }
 
 func New(cfg Config) *Server {
@@ -26,11 +27,9 @@ func New(cfg Config) *Server {
 	auther := auth.AllowAll()
 	filesystem := fs.NativeFileSystem{RootDir: cfg.Dir}
 	return &Server{
-		Metadata: Metadata{
-			NumTotal: uint32(cfg.Limit),
-		},
-		FS:     filesystem,
-		Auther: auther,
+		BlocksTotal: uint32(cfg.Limit),
+		Auther:      auther,
+		FS:          filesystem,
 	}
 }
 

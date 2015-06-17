@@ -15,7 +15,7 @@ type Config struct {
 }
 
 func (cfg *Config) AddFlags(fs *flag.FlagSet) {
-	const l = 1024
+	const l = 0
 
 	fs.StringVar(&cfg.Bind, "bind", "",
 		"address to listen on")

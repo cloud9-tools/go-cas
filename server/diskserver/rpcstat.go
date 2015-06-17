@@ -27,6 +27,6 @@ func (srv *Server) Stat(ctx context.Context, in *proto.StatRequest) (out *proto.
 	defer srv.Metadata.Mutex.RUnlock()
 
 	out.BlocksUsed = int64(len(srv.Metadata.Used))
-	out.BlocksFree = int64(srv.Metadata.NumTotal) - out.BlocksUsed
+	out.BlocksFree = int64(srv.BlocksTotal) - out.BlocksUsed
 	return
 }

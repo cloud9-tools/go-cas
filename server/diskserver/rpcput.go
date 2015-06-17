@@ -57,6 +57,10 @@ func (srv *Server) Put(ctx context.Context, in *proto.PutRequest) (out *proto.Pu
 	if found {
 		return
 	}
+	if uint(len(srv.Metadata.Used)) >= uint(srv.BlocksTotal) {
+		err = grpc.Errorf(codes.ResourceExhausted, "storage exhausted")
+		return
+	}
 	blknum, inserted := srv.Metadata.Insert(slot, addr)
 	if !inserted {
 		err = grpc.Errorf(codes.ResourceExhausted, "storage exhausted")
