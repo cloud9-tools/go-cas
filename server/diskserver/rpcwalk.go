@@ -10,7 +10,6 @@ import (
 	"github.com/chronos-tachyon/go-cas/proto"
 	"github.com/chronos-tachyon/go-cas/server"
 	"github.com/chronos-tachyon/go-cas/server/auth"
-	"github.com/chronos-tachyon/go-cas/server/fs"
 	"github.com/chronos-tachyon/go-multierror"
 )
 
@@ -43,18 +42,8 @@ func (srv *Server) Walk(in *proto.WalkRequest, stream proto.CAS_WalkServer) (err
 		reply := &proto.WalkReply{}
 		reply.Addr = used.Addr.String()
 		if re != nil || in.WantBlocks {
-			var f fs.File
-			f, err = srv.OpenBlock(used.Addr, fs.ReadOnly)
-			if err != nil {
-				errors = append(errors, err)
-				continue
-			}
-			if f == nil {
-				continue
-			}
 			var block *server.Block
-			block, err = ReadBlock(f, used.Offset)
-			f.Close()
+			block, err = ReadBlock(srv.DataFile, used.Offset)
 			if err != nil {
 				errors = append(errors, err)
 				continue

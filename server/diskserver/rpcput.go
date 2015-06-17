@@ -10,7 +10,6 @@ import (
 	"github.com/chronos-tachyon/go-cas/proto"
 	"github.com/chronos-tachyon/go-cas/server"
 	"github.com/chronos-tachyon/go-cas/server/auth"
-	"github.com/chronos-tachyon/go-cas/server/fs"
 )
 
 func (srv *Server) Put(ctx context.Context, in *proto.PutRequest) (out *proto.PutReply, err error) {
@@ -54,14 +53,6 @@ func (srv *Server) Put(ctx context.Context, in *proto.PutRequest) (out *proto.Pu
 	srv.Metadata.Mutex.Lock()
 	defer srv.Metadata.Mutex.Unlock()
 
-	var f fs.File
-	f, err = srv.OpenBlock(addr, fs.ReadWrite)
-	if err != nil {
-		err = grpc.Errorf(codes.Unknown, "%v", err)
-		return
-	}
-	defer f.Close()
-
 	slot, _, found := srv.Metadata.Search(addr)
 	if found {
 		return
@@ -75,7 +66,7 @@ func (srv *Server) Put(ctx context.Context, in *proto.PutRequest) (out *proto.Pu
 		err = grpc.Errorf(codes.Unknown, "%v", err)
 		return
 	}
-	if err = WriteBlock(f, blknum, &block); err != nil {
+	if err = WriteBlock(srv.DataFile, blknum, &block); err != nil {
 		err = grpc.Errorf(codes.Unknown, "%v", err)
 		return
 	}

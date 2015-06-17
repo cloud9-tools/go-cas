@@ -6,9 +6,9 @@ import (
 	"sync"
 
 	"github.com/chronos-tachyon/go-cas/proto"
-	"github.com/chronos-tachyon/go-cas/server"
 	"github.com/chronos-tachyon/go-cas/server/auth"
 	"github.com/chronos-tachyon/go-cas/server/fs"
+	"github.com/chronos-tachyon/go-multierror"
 )
 
 type Server struct {
@@ -16,6 +16,7 @@ type Server struct {
 	Metadata     Metadata
 	MetadataFile fs.File
 	BackupFile   fs.File
+	DataFile     fs.File
 	FS           fs.FileSystem
 	Auther       auth.Auther
 	CRNG         io.Reader
@@ -27,16 +28,9 @@ func New(cfg Config) *Server {
 	}
 	auther := auth.AllowAll()
 	filesystem := fs.NativeFileSystem{RootDir: cfg.Dir}
-	var i uint8
-	for cfg.MaxSlots > (1 << i) {
-		i++
-	}
 	return &Server{
 		Metadata: Metadata{
 			NumTotal:     uint32(cfg.Limit),
-			Depth:        uint8(cfg.Depth),
-			Width:        uint8(cfg.Width),
-			MaxSlotsLog2: i,
 		},
 		FS:     filesystem,
 		Auther: auther,
@@ -45,9 +39,12 @@ func New(cfg Config) *Server {
 }
 
 func (srv *Server) Open() (err error) {
-	var mf, bf fs.File
+	var mf, bf, df fs.File
 	defer func() {
 		if err != nil {
+			if df != nil {
+				df.Close()
+			}
 			if bf != nil {
 				bf.Close()
 			}
@@ -64,6 +61,11 @@ func (srv *Server) Open() (err error) {
 	if err != nil {
 		return err
 	}
+	df, err = srv.FS.Open("data", fs.ReadWrite, fs.DirectIO)
+	if err != nil {
+		return err
+	}
+	srv.DataFile = df
 	srv.BackupFile = bf
 	srv.MetadataFile = mf
 
@@ -77,20 +79,10 @@ func (srv *Server) Open() (err error) {
 }
 
 func (srv *Server) Close() error {
-	srv.BackupFile.Close()
-	return srv.MetadataFile.Close()
-}
-
-func (srv *Server) OpenBlock(addr server.Addr, wt fs.WriteType) (fs.File, error) {
-	p := srv.Metadata.BlockPath(addr)
-	f, err := srv.FS.Open(p, wt, fs.DirectIO)
-	if err == fs.ErrNotFound {
-		return nil, nil
-	}
-	if err != nil {
-		return nil, err
-	}
-	return f, nil
+	return multierror.Of(
+		srv.DataFile.Close(),
+		srv.BackupFile.Close(),
+		srv.MetadataFile.Close())
 }
 
 var _ proto.CASServer = (*Server)(nil)
