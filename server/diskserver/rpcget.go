@@ -9,12 +9,16 @@ import (
 
 	"github.com/chronos-tachyon/go-cas/proto"
 	"github.com/chronos-tachyon/go-cas/server"
-	"github.com/chronos-tachyon/go-cas/server/auth"
 )
 
 func (srv *Server) Get(ctx context.Context, in *proto.GetRequest) (out *proto.GetReply, err error) {
+	id := srv.Auther.Extract(ctx)
+	if err = id.Check(srv.ACL).Err(); err != nil {
+		return
+	}
+
 	out = &proto.GetReply{}
-	log.Printf("-- BEGIN Get: in=%#v", in)
+	log.Printf("-- BEGIN Get: in=%#v id=%v", in, id)
 	defer func() {
 		if err != nil {
 			out = nil
@@ -25,10 +29,6 @@ func (srv *Server) Get(ctx context.Context, in *proto.GetRequest) (out *proto.Ge
 		}
 		log.Printf("-- END Get: out=%#v err=%v", sanitizedOut, err)
 	}()
-
-	if err = srv.Auther.Auth(ctx, auth.Get).Err(); err != nil {
-		return
-	}
 
 	var addr server.Addr
 	if err = addr.Parse(in.Addr); err != nil {

@@ -13,6 +13,7 @@ type Server struct {
 	Mutex        sync.Mutex
 	Metadata     Metadata
 	BlocksTotal  uint32
+	ACL          auth.ACL
 	Auther       auth.Auther
 	FS           fs.FileSystem
 	MetadataFile fs.File
@@ -24,12 +25,11 @@ func New(cfg Config) *Server {
 	if err := cfg.Validate(); err != nil {
 		panic(err)
 	}
-	auther := auth.AllowAll()
-	filesystem := fs.NativeFileSystem{RootDir: cfg.Dir}
 	return &Server{
 		BlocksTotal: uint32(cfg.Limit),
-		Auther:      auther,
-		FS:          filesystem,
+		ACL:         cfg.ACL,
+		Auther:      auth.AnonymousAuther(),
+		FS:          fs.NativeFileSystem{RootDir: cfg.Dir},
 	}
 }
 

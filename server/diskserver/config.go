@@ -6,17 +6,25 @@ import (
 	"net"
 
 	"github.com/chronos-tachyon/go-cas/common"
+	"github.com/chronos-tachyon/go-cas/server/auth"
 )
 
 type Config struct {
 	Bind  string
 	Dir   string
 	Limit uint64
+	ACL   auth.ACL
 }
 
 func (cfg *Config) AddFlags(fs *flag.FlagSet) {
 	const l = 0
 
+	if cfg.ACL == nil {
+		cfg.ACL = auth.AllowAll()
+	}
+
+	fs.Var(&cfg.ACL, "acl",
+		"access control list to apply to CAS RPCs")
 	fs.StringVar(&cfg.Bind, "bind", "",
 		"address to listen on")
 	fs.StringVar(&cfg.Dir, "dir", "",
@@ -25,6 +33,7 @@ func (cfg *Config) AddFlags(fs *flag.FlagSet) {
 		"maximum number of blocks to store on diskserver "+
 			"("+common.BlockSizeHuman+" each)")
 
+	fs.Var(&cfg.ACL, "A", "alias for --acl")
 	fs.StringVar(&cfg.Bind, "B", "", "alias for --bind")
 	fs.StringVar(&cfg.Dir, "D", "", "alias for --dir")
 	fs.Uint64Var(&cfg.Limit, "l", l, "alias for --limit")

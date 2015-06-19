@@ -27,7 +27,8 @@ func ZipfModel(index, size int) float64 {
 }
 
 type Server struct {
-	auther   auth.Auther
+	ACL      auth.ACL
+	Auther   auth.Auther
 	shards   []*shard
 	fallback client.Client
 	model    ModelFunc
@@ -39,7 +40,6 @@ func NewServer(cfg Config) *Server {
 	if err := cfg.Validate(); err != nil {
 		panic(err)
 	}
-	auther := auth.AllowAll()
 	shards := make([]*shard, 0, cfg.NumShards)
 	perShardMax := uint32(cfg.Limit / cfg.NumShards)
 	for i := uint(0); i < cfg.NumShards; i++ {
@@ -53,7 +53,8 @@ func NewServer(cfg Config) *Server {
 	rng := rand.New(rand.NewSource(time.Now().UnixNano()))
 
 	srv := &Server{
-		auther:   auther,
+		ACL:      cfg.ACL,
+		Auther:   auth.AnonymousAuther(),
 		shards:   shards,
 		fallback: fallback,
 		model:    model,

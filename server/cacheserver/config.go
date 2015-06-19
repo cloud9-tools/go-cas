@@ -7,6 +7,7 @@ import (
 
 	"github.com/chronos-tachyon/go-cas/client"
 	"github.com/chronos-tachyon/go-cas/common"
+	"github.com/chronos-tachyon/go-cas/server/auth"
 )
 
 type Config struct {
@@ -14,24 +15,33 @@ type Config struct {
 	Connect   string
 	Limit     uint
 	NumShards uint
+	ACL       auth.ACL
 }
 
 func (cfg *Config) AddFlags(fs *flag.FlagSet) {
+	const l = 0
 	const n = 16
 
+	if cfg.ACL == nil {
+		cfg.ACL = auth.AllowAll()
+	}
+
+	fs.Var(&cfg.ACL, "acl",
+		"access control list to apply to CAS RPCs")
 	fs.StringVar(&cfg.Bind, "bind", "",
 		"address to listen on")
 	fs.StringVar(&cfg.Connect, "connect", "",
 		"CAS backend to connect to for cache misses")
-	fs.UintVar(&cfg.Limit, "limit", 0,
+	fs.UintVar(&cfg.Limit, "limit", l,
 		"maximum number of "+common.BlockSizeHuman+
 			" blocks to cache in RAM")
 	fs.UintVar(&cfg.NumShards, "num_shards", n,
 		"shard data N ways for parallelism")
 
+	fs.Var(&cfg.ACL, "A", "alias for --acl")
 	fs.StringVar(&cfg.Bind, "B", "", "alias for --bind")
 	fs.StringVar(&cfg.Connect, "C", "", "alias for --connect")
-	fs.UintVar(&cfg.Limit, "l", 0, "alias for --limit")
+	fs.UintVar(&cfg.Limit, "l", l, "alias for --limit")
 	fs.UintVar(&cfg.NumShards, "n", n, "alias for --num_shards")
 }
 

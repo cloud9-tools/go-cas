@@ -6,11 +6,11 @@ import (
 	"github.com/chronos-tachyon/go-cas/internal"
 	"github.com/chronos-tachyon/go-cas/proto"
 	"github.com/chronos-tachyon/go-cas/server"
-	"github.com/chronos-tachyon/go-cas/server/auth"
 )
 
 func (srv *Server) Put(ctx context.Context, in *proto.PutRequest) (out *proto.PutReply, err error) {
-	if err := srv.auther.Auth(ctx, auth.Put).Err(); err != nil {
+	id := srv.Auther.Extract(ctx)
+	if err := id.Check(srv.ACL).Err(); err != nil {
 		return nil, err
 	}
 

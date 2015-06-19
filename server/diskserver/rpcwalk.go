@@ -9,19 +9,19 @@ import (
 
 	"github.com/chronos-tachyon/go-cas/proto"
 	"github.com/chronos-tachyon/go-cas/server"
-	"github.com/chronos-tachyon/go-cas/server/auth"
 	"github.com/chronos-tachyon/go-multierror"
 )
 
 func (srv *Server) Walk(in *proto.WalkRequest, stream proto.CAS_WalkServer) (err error) {
-	log.Printf("-- BEGIN Walk: in=%#v", in)
+	id := srv.Auther.Extract(stream.Context())
+	if err = id.Check(srv.ACL).Err(); err != nil {
+		return
+	}
+
+	log.Printf("-- BEGIN Walk: in=%#v id=%v", in, id)
 	defer func() {
 		log.Printf("-- END Walk: err=%v", err)
 	}()
-
-	if err = srv.Auther.Auth(stream.Context(), auth.Walk).Err(); err != nil {
-		return
-	}
 
 	var re *regexp.Regexp
 	if in.Regexp != "" {

@@ -1,6 +1,7 @@
 package auth // import "github.com/chronos-tachyon/go-cas/server/auth"
 
 import (
+	"fmt"
 	"log"
 
 	"golang.org/x/net/context"
@@ -9,65 +10,47 @@ import (
 type Auther struct {
 	Extractor     Extractor
 	Membershipper Membershipper
-	ACL           ACL
 }
 
-func (auther Auther) Auth(ctx context.Context, op Operation) Result {
-	user, err := auther.Extractor.Extract(ctx)
+func (auther Auther) Extract(ctx context.Context) Identity {
+	role, err := auther.Extractor.Extract(ctx)
 	if err != nil {
 		log.Printf("go-cas/server/auth: failed to identify user: %v", err)
-		user = Anonymous
+		role = Anonymous
 	}
-	log.Printf("user=%q op=%q", user, op)
-	for _, rule := range auther.ACL {
+	return Identity{auther, role}
+}
+
+type Identity struct {
+	Auther Auther
+	Role   Role
+}
+
+func (id Identity) String() string {
+	return fmt.Sprintf("%q", string(id.Role))
+}
+
+func (id Identity) Check(acl ACL) Result {
+	for _, rule := range acl {
 		log.Printf("rule=%#v", rule)
-		if rule.Op != Any && rule.Op != op {
+		ismem, err := IsIn(id.Role, rule.Role, id.Auther.Membershipper)
+		if err != nil {
+			log.Printf("go-cas/server/auth: failed to test "+
+				"membership of user %q in group %q: %v",
+				id.Role, rule.Role, err)
+			ismem = (rule.Result == Deny)
+		}
+		if !ismem {
 			continue
 		}
-		switch rule.PrincipalType {
-		case UserType:
-			if rule.Principal != Anybody && rule.Principal != user {
-				continue
-			}
-			return rule.Result
-		case GroupType:
-			if rule.Principal == Anybody {
-				return rule.Result
-			}
-			ismem, err := auther.Membershipper.IsMember(user, rule.Principal)
-			if err != nil {
-				log.Printf("go-cas/server/auth: failed to "+
-					"test membership of user %q in group "+
-					"%q: %v", user, rule.Principal, err)
-				ismem = (rule.Result == Deny)
-			}
-			if !ismem {
-				continue
-			}
-			return rule.Result
-		}
+		return rule.Result
 	}
 	return Deny
 }
 
-func DenyAll() Auther {
+func AnonymousAuther() Auther {
 	return Auther{
 		Extractor:     AnonymousExtractor{},
 		Membershipper: NoMemberships{},
-		ACL:           nil,
-	}
-}
-
-func AllowAll() Auther {
-	return Auther{
-		Extractor:     AnonymousExtractor{},
-		Membershipper: NoMemberships{},
-		ACL: ACL{
-			Rule{
-				PrincipalType: UserType,
-				Principal:     Anybody,
-				Result:        Allow,
-			},
-		},
 	}
 }

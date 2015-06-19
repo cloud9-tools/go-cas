@@ -9,26 +9,26 @@ import (
 
 	"github.com/chronos-tachyon/go-cas/proto"
 	"github.com/chronos-tachyon/go-cas/server"
-	"github.com/chronos-tachyon/go-cas/server/auth"
 )
 
 func (srv *Server) Put(ctx context.Context, in *proto.PutRequest) (out *proto.PutReply, err error) {
+	id := srv.Auther.Extract(ctx)
+	if err = id.Check(srv.ACL).Err(); err != nil {
+		return
+	}
+
 	out = &proto.PutReply{}
 	sanitizedIn := *in
 	if len(sanitizedIn.Block) > 0 {
 		sanitizedIn.Block = []byte{}
 	}
-	log.Printf("-- BEGIN Put: in=%#v", sanitizedIn)
+	log.Printf("-- BEGIN Put: in=%#v id=%v", sanitizedIn, id)
 	defer func() {
 		if err != nil {
 			out = nil
 		}
 		log.Printf("-- END Put: out=%#v err=%v", out, err)
 	}()
-
-	if err = srv.Auther.Auth(ctx, auth.Put).Err(); err != nil {
-		return
-	}
 
 	var block server.Block
 	if err = block.Pad(in.Block); err != nil {

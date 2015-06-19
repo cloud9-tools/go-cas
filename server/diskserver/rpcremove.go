@@ -9,22 +9,22 @@ import (
 
 	"github.com/chronos-tachyon/go-cas/proto"
 	"github.com/chronos-tachyon/go-cas/server"
-	"github.com/chronos-tachyon/go-cas/server/auth"
 )
 
 func (srv *Server) Remove(ctx context.Context, in *proto.RemoveRequest) (out *proto.RemoveReply, err error) {
+	id := srv.Auther.Extract(ctx)
+	if err = id.Check(srv.ACL).Err(); err != nil {
+		return
+	}
+
 	out = &proto.RemoveReply{}
-	log.Printf("-- BEGIN Remove: in=%#v", in)
+	log.Printf("-- BEGIN Remove: in=%#v id=%v", in, id)
 	defer func() {
 		if err != nil {
 			out = nil
 		}
 		log.Printf("-- END Remove: out=%#v err=%v", out, err)
 	}()
-
-	if err = srv.Auther.Auth(ctx, auth.Remove).Err(); err != nil {
-		return
-	}
 
 	var addr server.Addr
 	if err = addr.Parse(in.Addr); err != nil {

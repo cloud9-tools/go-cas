@@ -6,11 +6,11 @@ import (
 	"github.com/chronos-tachyon/go-cas/internal"
 	"github.com/chronos-tachyon/go-cas/proto"
 	"github.com/chronos-tachyon/go-cas/server"
-	"github.com/chronos-tachyon/go-cas/server/auth"
 )
 
 func (srv *Server) Remove(ctx context.Context, in *proto.RemoveRequest) (out *proto.RemoveReply, err error) {
-	if err := srv.auther.Auth(ctx, auth.Remove).Err(); err != nil {
+	id := srv.Auther.Extract(ctx)
+	if err := id.Check(srv.ACL).Err(); err != nil {
 		return nil, err
 	}
 
