@@ -7,7 +7,7 @@ import (
 	"os"
 	"time"
 
-	"cloud9.tools/go/cas/internal"
+	"github.com/cloud9-tools/go-cas/internal"
 	"golang.org/x/net/context"
 )
 

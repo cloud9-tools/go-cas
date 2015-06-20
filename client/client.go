@@ -5,8 +5,8 @@ import (
 	"net"
 	"time"
 
-	"cloud9.tools/go/cas/common"
-	"cloud9.tools/go/cas/proto"
+	"github.com/cloud9-tools/go-cas/common"
+	"github.com/cloud9-tools/go-cas/proto"
 	"google.golang.org/grpc"
 )
 

@@ -7,8 +7,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"cloud9.tools/go/cas/common"
-	"cloud9.tools/go/cas/server"
+	"github.com/cloud9-tools/go-cas/common"
+	"github.com/cloud9-tools/go-cas/server"
 )
 
 func (wt WriteType) flag() int {

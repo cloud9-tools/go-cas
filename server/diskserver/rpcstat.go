@@ -5,7 +5,7 @@ import (
 
 	"golang.org/x/net/context"
 
-	"cloud9.tools/go/cas/proto"
+	"github.com/cloud9-tools/go-cas/proto"
 )
 
 func (srv *Server) Stat(ctx context.Context, in *proto.StatRequest) (out *proto.StatReply, err error) {

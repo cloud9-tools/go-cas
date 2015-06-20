@@ -7,7 +7,7 @@ import (
 	"os"
 	"strings"
 
-	"cloud9.tools/go/cas/client/libcasutil/internal/script"
+	"github.com/cloud9-tools/go-cas/client/libcasutil/internal/script"
 	"golang.org/x/net/context"
 )
 

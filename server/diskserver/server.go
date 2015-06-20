@@ -3,10 +3,10 @@ package diskserver
 import (
 	"sync"
 
-	"cloud9.tools/go/cas/proto"
-	"cloud9.tools/go/cas/server/auth"
-	"cloud9.tools/go/cas/server/fs"
-	"cloud9.tools/go/multierror"
+	"github.com/cloud9-tools/go-cas/proto"
+	"github.com/cloud9-tools/go-cas/server/auth"
+	"github.com/cloud9-tools/go-cas/server/fs"
+	"github.com/cloud9-tools/go-multierror"
 )
 
 type Server struct {

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"testing"
 
-	"cloud9.tools/go/cas/common"
+	"github.com/cloud9-tools/go-cas/common"
 )
 
 func TestBlock_Addr(t *testing.T) {

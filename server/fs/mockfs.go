@@ -4,7 +4,7 @@
 package fs
 
 import (
-	server "cloud9.tools/go/cas/server"
+	server "github.com/cloud9-tools/go-cas/server"
 	gomock "github.com/golang/mock/gomock"
 )
 

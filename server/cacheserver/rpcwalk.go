@@ -3,7 +3,7 @@ package cacheserver
 import (
 	"io"
 
-	"cloud9.tools/go/cas/proto"
+	"github.com/cloud9-tools/go-cas/proto"
 )
 
 func (srv *Server) Walk(in *proto.WalkRequest, serverstream proto.CAS_WalkServer) error {

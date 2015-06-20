@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"cloud9.tools/go/cas/internal"
+	"github.com/cloud9-tools/go-cas/internal"
 )
 
 func TestAddr_Parse(t *testing.T) {

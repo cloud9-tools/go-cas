@@ -6,8 +6,8 @@ import (
 	"os"
 	"strings"
 
-	"cloud9.tools/go/cas/client"
-	"cloud9.tools/go/cas/proto"
+	"github.com/cloud9-tools/go-cas/client"
+	"github.com/cloud9-tools/go-cas/proto"
 	"golang.org/x/net/context"
 )
 

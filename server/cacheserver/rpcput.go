@@ -3,9 +3,9 @@ package cacheserver
 import (
 	"golang.org/x/net/context"
 
-	"cloud9.tools/go/cas/internal"
-	"cloud9.tools/go/cas/proto"
-	"cloud9.tools/go/cas/server"
+	"github.com/cloud9-tools/go-cas/internal"
+	"github.com/cloud9-tools/go-cas/proto"
+	"github.com/cloud9-tools/go-cas/server"
 )
 
 func (srv *Server) Put(ctx context.Context, in *proto.PutRequest) (out *proto.PutReply, err error) {

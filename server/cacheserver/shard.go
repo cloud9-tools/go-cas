@@ -5,8 +5,8 @@ import (
 	"sort"
 	"sync"
 
-	"cloud9.tools/go/cas/internal"
-	"cloud9.tools/go/cas/server"
+	"github.com/cloud9-tools/go-cas/internal"
+	"github.com/cloud9-tools/go-cas/server"
 )
 
 const maxuint32 = ^uint32(0)

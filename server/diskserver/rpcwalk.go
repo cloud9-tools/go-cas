@@ -7,9 +7,9 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 
-	"cloud9.tools/go/cas/proto"
-	"cloud9.tools/go/cas/server"
-	"cloud9.tools/go/multierror"
+	"github.com/cloud9-tools/go-cas/proto"
+	"github.com/cloud9-tools/go-cas/server"
+	"github.com/cloud9-tools/go-multierror"
 )
 
 func (srv *Server) Walk(in *proto.WalkRequest, stream proto.CAS_WalkServer) (err error) {

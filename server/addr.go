@@ -4,7 +4,7 @@ import (
 	"encoding/hex"
 	"fmt"
 
-	"cloud9.tools/go/cas/internal"
+	"github.com/cloud9-tools/go-cas/internal"
 )
 
 const addrParseFmtPrefix = "go-cas/server: failed to parse %q as Addr: "

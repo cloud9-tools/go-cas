@@ -7,8 +7,8 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 
-	"cloud9.tools/go/cas/proto"
-	"cloud9.tools/go/cas/server"
+	"github.com/cloud9-tools/go-cas/proto"
+	"github.com/cloud9-tools/go-cas/server"
 )
 
 func (srv *Server) Remove(ctx context.Context, in *proto.RemoveRequest) (out *proto.RemoveReply, err error) {

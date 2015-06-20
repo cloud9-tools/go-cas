@@ -6,7 +6,7 @@ import (
 	"errors"
 	"fmt"
 
-	"cloud9.tools/go/cas/common"
+	"github.com/cloud9-tools/go-cas/common"
 )
 
 var ErrBlockTooLong = errors.New("CAS block is too long")

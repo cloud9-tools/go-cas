@@ -6,7 +6,7 @@ package fs
 import (
 	"errors"
 
-	"cloud9.tools/go/cas/server"
+	"github.com/cloud9-tools/go-cas/server"
 )
 
 var ErrNotFound = errors.New("not found")

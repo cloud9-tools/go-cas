@@ -6,9 +6,9 @@ import (
 
 	"google.golang.org/grpc"
 
-	"cloud9.tools/go/cas/common"
-	"cloud9.tools/go/cas/proto"
-	"cloud9.tools/go/cas/server/cacheserver"
+	"github.com/cloud9-tools/go-cas/common"
+	"github.com/cloud9-tools/go-cas/proto"
+	"github.com/cloud9-tools/go-cas/server/cacheserver"
 )
 
 func main() {

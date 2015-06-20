@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"net"
 
-	"cloud9.tools/go/cas/client"
-	"cloud9.tools/go/cas/common"
-	"cloud9.tools/go/cas/server/auth"
+	"github.com/cloud9-tools/go-cas/client"
+	"github.com/cloud9-tools/go-cas/common"
+	"github.com/cloud9-tools/go-cas/server/auth"
 )
 
 type Config struct {

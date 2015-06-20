@@ -7,8 +7,8 @@ import (
 	"sort"
 	"sync"
 
-	"cloud9.tools/go/cas/server"
-	"cloud9.tools/go/cas/server/fs"
+	"github.com/cloud9-tools/go-cas/server"
+	"github.com/cloud9-tools/go-cas/server/fs"
 )
 
 const metadataMagic = 0x63417344 // "cAsD"

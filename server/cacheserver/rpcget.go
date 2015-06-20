@@ -5,10 +5,10 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 
-	"cloud9.tools/go/cas/client"
-	"cloud9.tools/go/cas/internal"
-	"cloud9.tools/go/cas/proto"
-	"cloud9.tools/go/cas/server"
+	"github.com/cloud9-tools/go-cas/client"
+	"github.com/cloud9-tools/go-cas/internal"
+	"github.com/cloud9-tools/go-cas/proto"
+	"github.com/cloud9-tools/go-cas/server"
 )
 
 func (srv *Server) Get(ctx context.Context, in *proto.GetRequest) (out *proto.GetReply, err error) {
