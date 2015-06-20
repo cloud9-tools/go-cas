@@ -1,11 +1,11 @@
-package libcasutil // import "github.com/cloud9-tools/go-cas/client/libcasutil"
+package libcasutil
 
 import (
 	"flag"
 	"io"
 
-	"github.com/cloud9-tools/go-cas/client"
-	"github.com/cloud9-tools/go-cas/proto"
+	"cloud9.tools/go/cas/client"
+	"cloud9.tools/go/cas/proto"
 	"golang.org/x/net/context"
 )
 

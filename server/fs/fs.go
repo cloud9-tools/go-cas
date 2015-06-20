@@ -1,4 +1,4 @@
-package fs // import "github.com/cloud9-tools/go-cas/server/fs"
+package fs
 
 //go:generate mockgen -source=fs.go -package=fs -destination=mockfs.go
 //go:generate stringer -type=WriteType
@@ -6,7 +6,7 @@ package fs // import "github.com/cloud9-tools/go-cas/server/fs"
 import (
 	"errors"
 
-	"github.com/cloud9-tools/go-cas/server"
+	"cloud9.tools/go/cas/server"
 )
 
 var ErrNotFound = errors.New("not found")

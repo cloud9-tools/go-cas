@@ -1,4 +1,4 @@
-package cacheserver // import "github.com/cloud9-tools/go-cas/server/cacheserver"
+package cacheserver
 
 import (
 	"encoding/binary"
@@ -6,9 +6,9 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/cloud9-tools/go-cas/client"
-	"github.com/cloud9-tools/go-cas/server"
-	"github.com/cloud9-tools/go-cas/server/auth"
+	"cloud9.tools/go/cas/client"
+	"cloud9.tools/go/cas/server"
+	"cloud9.tools/go/cas/server/auth"
 )
 
 // ModelFunc is a function that takes the size of a cache and the index of one

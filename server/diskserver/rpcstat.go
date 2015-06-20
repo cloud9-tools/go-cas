@@ -1,11 +1,11 @@
-package diskserver // import "github.com/cloud9-tools/go-cas/server/diskserver"
+package diskserver
 
 import (
 	"log"
 
 	"golang.org/x/net/context"
 
-	"github.com/cloud9-tools/go-cas/proto"
+	"cloud9.tools/go/cas/proto"
 )
 
 func (srv *Server) Stat(ctx context.Context, in *proto.StatRequest) (out *proto.StatReply, err error) {

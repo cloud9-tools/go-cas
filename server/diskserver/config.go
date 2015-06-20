@@ -1,12 +1,12 @@
-package diskserver // import "github.com/cloud9-tools/go-cas/server/diskserver"
+package diskserver
 
 import (
 	"flag"
 	"fmt"
 	"net"
 
-	"github.com/cloud9-tools/go-cas/common"
-	"github.com/cloud9-tools/go-cas/server/auth"
+	"cloud9.tools/go/cas/common"
+	"cloud9.tools/go/cas/server/auth"
 )
 
 type Config struct {

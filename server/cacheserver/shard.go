@@ -1,12 +1,12 @@
-package cacheserver // import "github.com/cloud9-tools/go-cas/server/cacheserver"
+package cacheserver
 
 import (
 	"math/rand"
 	"sort"
 	"sync"
 
-	"github.com/cloud9-tools/go-cas/internal"
-	"github.com/cloud9-tools/go-cas/server"
+	"cloud9.tools/go/cas/internal"
+	"cloud9.tools/go/cas/server"
 )
 
 const maxuint32 = ^uint32(0)

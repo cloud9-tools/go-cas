@@ -1,11 +1,11 @@
-package server // import "github.com/cloud9-tools/go-cas/server"
+package server
 
 import (
 	"bytes"
 	"fmt"
 	"testing"
 
-	"github.com/cloud9-tools/go-cas/common"
+	"cloud9.tools/go/cas/common"
 )
 
 func TestBlock_Addr(t *testing.T) {

@@ -7,8 +7,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/cloud9-tools/go-cas/client/libcasutil"
-	"github.com/cloud9-tools/go-cas/common"
+	"cloud9.tools/go/cas/client/libcasutil"
+	"cloud9.tools/go/cas/common"
 )
 
 const defaultSpec = "ram:0"

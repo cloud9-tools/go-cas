@@ -1,11 +1,11 @@
-package cacheserver // import "github.com/cloud9-tools/go-cas/server/cacheserver"
+package cacheserver
 
 import (
 	"golang.org/x/net/context"
 
-	"github.com/cloud9-tools/go-cas/internal"
-	"github.com/cloud9-tools/go-cas/proto"
-	"github.com/cloud9-tools/go-cas/server"
+	"cloud9.tools/go/cas/internal"
+	"cloud9.tools/go/cas/proto"
+	"cloud9.tools/go/cas/server"
 )
 
 func (srv *Server) Remove(ctx context.Context, in *proto.RemoveRequest) (out *proto.RemoveReply, err error) {

@@ -1,4 +1,4 @@
-package fs // import "github.com/cloud9-tools/go-cas/server/fs"
+package fs
 
 import (
 	"bytes"
@@ -7,8 +7,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/cloud9-tools/go-cas/common"
-	"github.com/cloud9-tools/go-cas/server"
+	"cloud9.tools/go/cas/common"
+	"cloud9.tools/go/cas/server"
 )
 
 func (wt WriteType) flag() int {

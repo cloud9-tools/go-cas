@@ -1,9 +1,9 @@
-package cacheserver // import "github.com/cloud9-tools/go-cas/server/cacheserver"
+package cacheserver
 
 import (
 	"io"
 
-	"github.com/cloud9-tools/go-cas/proto"
+	"cloud9.tools/go/cas/proto"
 )
 
 func (srv *Server) Walk(in *proto.WalkRequest, serverstream proto.CAS_WalkServer) error {

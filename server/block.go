@@ -1,4 +1,4 @@
-package server // import "github.com/cloud9-tools/go-cas/server"
+package server
 
 import (
 	"bytes"
@@ -6,7 +6,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/cloud9-tools/go-cas/common"
+	"cloud9.tools/go/cas/common"
 )
 
 var ErrBlockTooLong = errors.New("CAS block is too long")

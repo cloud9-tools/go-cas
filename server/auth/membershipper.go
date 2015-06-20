@@ -1,4 +1,4 @@
-package auth // import "github.com/cloud9-tools/go-cas/server/auth"
+package auth
 
 type Membershipper interface {
 	IsMember(user, group Role) (bool, error)

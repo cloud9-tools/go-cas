@@ -1,4 +1,4 @@
-package signal // import "github.com/cloud9-tools/go-cas/server/signal"
+package signal
 
 import (
 	"os"
