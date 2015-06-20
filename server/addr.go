@@ -1,10 +1,10 @@
-package server // import "github.com/chronos-tachyon/go-cas/server"
+package server // import "github.com/cloud9-tools/go-cas/server"
 
 import (
 	"encoding/hex"
 	"fmt"
 
-	"github.com/chronos-tachyon/go-cas/internal"
+	"github.com/cloud9-tools/go-cas/internal"
 )
 
 const addrParseFmtPrefix = "go-cas/server: failed to parse %q as Addr: "

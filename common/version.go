@@ -1,4 +1,4 @@
-package common // import "github.com/chronos-tachyon/go-cas/common"
+package common // import "github.com/cloud9-tools/go-cas/common"
 
 import (
 	"fmt"
@@ -8,7 +8,7 @@ import (
 )
 
 const Version = "(unreleased)"
-const URL = "https://github.com/chronos-tachyon/go-cas"
+const URL = "https://github.com/cloud9-tools/go-cas"
 
 func ShowVersion() {
 	prog := filepath.Base(os.Args[0])

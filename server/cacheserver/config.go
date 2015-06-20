@@ -1,13 +1,13 @@
-package cacheserver // import "github.com/chronos-tachyon/go-cas/server/cacheserver"
+package cacheserver // import "github.com/cloud9-tools/go-cas/server/cacheserver"
 
 import (
 	"flag"
 	"fmt"
 	"net"
 
-	"github.com/chronos-tachyon/go-cas/client"
-	"github.com/chronos-tachyon/go-cas/common"
-	"github.com/chronos-tachyon/go-cas/server/auth"
+	"github.com/cloud9-tools/go-cas/client"
+	"github.com/cloud9-tools/go-cas/common"
+	"github.com/cloud9-tools/go-cas/server/auth"
 )
 
 type Config struct {

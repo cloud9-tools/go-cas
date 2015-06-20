@@ -1,4 +1,4 @@
-package cacheserver // import "github.com/chronos-tachyon/go-cas/server/cacheserver"
+package cacheserver // import "github.com/cloud9-tools/go-cas/server/cacheserver"
 
 import (
 	"encoding/binary"
@@ -6,9 +6,9 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/chronos-tachyon/go-cas/client"
-	"github.com/chronos-tachyon/go-cas/server"
-	"github.com/chronos-tachyon/go-cas/server/auth"
+	"github.com/cloud9-tools/go-cas/client"
+	"github.com/cloud9-tools/go-cas/server"
+	"github.com/cloud9-tools/go-cas/server/auth"
 )
 
 // ModelFunc is a function that takes the size of a cache and the index of one

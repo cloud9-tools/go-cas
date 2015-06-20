@@ -1,12 +1,12 @@
-package client // import "github.com/chronos-tachyon/go-cas/client"
+package client // import "github.com/cloud9-tools/go-cas/client"
 
 import (
 	"io"
 	"net"
 	"time"
 
-	"github.com/chronos-tachyon/go-cas/common"
-	"github.com/chronos-tachyon/go-cas/proto"
+	"github.com/cloud9-tools/go-cas/common"
+	"github.com/cloud9-tools/go-cas/proto"
 	"google.golang.org/grpc"
 )
 

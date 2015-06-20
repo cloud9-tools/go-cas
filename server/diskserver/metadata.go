@@ -1,4 +1,4 @@
-package diskserver // import "github.com/chronos-tachyon/go-cas/server/diskserver"
+package diskserver // import "github.com/cloud9-tools/go-cas/server/diskserver"
 
 import (
 	"encoding/binary"
@@ -7,8 +7,8 @@ import (
 	"sort"
 	"sync"
 
-	"github.com/chronos-tachyon/go-cas/server"
-	"github.com/chronos-tachyon/go-cas/server/fs"
+	"github.com/cloud9-tools/go-cas/server"
+	"github.com/cloud9-tools/go-cas/server/fs"
 )
 
 const metadataMagic = 0x63417344 // "cAsD"

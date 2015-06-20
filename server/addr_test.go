@@ -1,10 +1,10 @@
-package server // import "github.com/chronos-tachyon/go-cas/server"
+package server // import "github.com/cloud9-tools/go-cas/server"
 
 import (
 	"fmt"
 	"testing"
 
-	"github.com/chronos-tachyon/go-cas/internal"
+	"github.com/cloud9-tools/go-cas/internal"
 )
 
 func TestAddr_Parse(t *testing.T) {

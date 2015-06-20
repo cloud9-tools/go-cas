@@ -1,4 +1,4 @@
-package script // import "github.com/chronos-tachyon/go-cas/client/libcasutil/internal/script"
+package script // import "github.com/cloud9-tools/go-cas/client/libcasutil/internal/script"
 
 import (
 	"errors"

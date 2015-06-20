@@ -6,10 +6,10 @@ import (
 
 	"google.golang.org/grpc"
 
-	"github.com/chronos-tachyon/go-cas/common"
-	"github.com/chronos-tachyon/go-cas/proto"
-	"github.com/chronos-tachyon/go-cas/server/diskserver"
-	"github.com/chronos-tachyon/go-cas/server/signal"
+	"github.com/cloud9-tools/go-cas/common"
+	"github.com/cloud9-tools/go-cas/proto"
+	"github.com/cloud9-tools/go-cas/server/diskserver"
+	"github.com/cloud9-tools/go-cas/server/signal"
 )
 
 func main() {

@@ -1,11 +1,11 @@
-package server // import "github.com/chronos-tachyon/go-cas/server"
+package server // import "github.com/cloud9-tools/go-cas/server"
 
 import (
 	"bytes"
 	"fmt"
 	"testing"
 
-	"github.com/chronos-tachyon/go-cas/common"
+	"github.com/cloud9-tools/go-cas/common"
 )
 
 func TestBlock_Addr(t *testing.T) {

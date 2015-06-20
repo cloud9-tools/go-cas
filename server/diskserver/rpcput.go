@@ -1,4 +1,4 @@
-package diskserver // import "github.com/chronos-tachyon/go-cas/server/diskserver"
+package diskserver // import "github.com/cloud9-tools/go-cas/server/diskserver"
 
 import (
 	"log"
@@ -7,8 +7,8 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 
-	"github.com/chronos-tachyon/go-cas/proto"
-	"github.com/chronos-tachyon/go-cas/server"
+	"github.com/cloud9-tools/go-cas/proto"
+	"github.com/cloud9-tools/go-cas/server"
 )
 
 func (srv *Server) Put(ctx context.Context, in *proto.PutRequest) (out *proto.PutReply, err error) {

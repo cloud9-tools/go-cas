@@ -1,4 +1,4 @@
-package fs // import "github.com/chronos-tachyon/go-cas/server/fs"
+package fs // import "github.com/cloud9-tools/go-cas/server/fs"
 
 import (
 	"os"

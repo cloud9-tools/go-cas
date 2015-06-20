@@ -1,2 +1,2 @@
 // Package server implements RPC servers for the CAS API.
-package server // import "github.com/chronos-tachyon/go-cas/server"
+package server // import "github.com/cloud9-tools/go-cas/server"

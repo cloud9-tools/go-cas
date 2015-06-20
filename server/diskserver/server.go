@@ -1,12 +1,12 @@
-package diskserver // import "github.com/chronos-tachyon/go-cas/server/diskserver"
+package diskserver // import "github.com/cloud9-tools/go-cas/server/diskserver"
 
 import (
 	"sync"
 
-	"github.com/chronos-tachyon/go-cas/proto"
-	"github.com/chronos-tachyon/go-cas/server/auth"
-	"github.com/chronos-tachyon/go-cas/server/fs"
-	"github.com/chronos-tachyon/go-multierror"
+	"github.com/cloud9-tools/go-cas/proto"
+	"github.com/cloud9-tools/go-cas/server/auth"
+	"github.com/cloud9-tools/go-cas/server/fs"
+	"github.com/cloud9-tools/go-multierror"
 )
 
 type Server struct {

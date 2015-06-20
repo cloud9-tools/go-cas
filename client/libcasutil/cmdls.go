@@ -1,11 +1,11 @@
-package libcasutil // import "github.com/chronos-tachyon/go-cas/client/libcasutil"
+package libcasutil // import "github.com/cloud9-tools/go-cas/client/libcasutil"
 
 import (
 	"flag"
 	"io"
 
-	"github.com/chronos-tachyon/go-cas/client"
-	"github.com/chronos-tachyon/go-cas/proto"
+	"github.com/cloud9-tools/go-cas/client"
+	"github.com/cloud9-tools/go-cas/proto"
 	"golang.org/x/net/context"
 )
 

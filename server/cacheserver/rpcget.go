@@ -1,14 +1,14 @@
-package cacheserver // import "github.com/chronos-tachyon/go-cas/server/cacheserver"
+package cacheserver // import "github.com/cloud9-tools/go-cas/server/cacheserver"
 
 import (
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 
-	"github.com/chronos-tachyon/go-cas/client"
-	"github.com/chronos-tachyon/go-cas/internal"
-	"github.com/chronos-tachyon/go-cas/proto"
-	"github.com/chronos-tachyon/go-cas/server"
+	"github.com/cloud9-tools/go-cas/client"
+	"github.com/cloud9-tools/go-cas/internal"
+	"github.com/cloud9-tools/go-cas/proto"
+	"github.com/cloud9-tools/go-cas/server"
 )
 
 func (srv *Server) Get(ctx context.Context, in *proto.GetRequest) (out *proto.GetReply, err error) {
