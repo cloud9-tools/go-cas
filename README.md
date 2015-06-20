@@ -1,8 +1,9 @@
 # go-cas
 A Content-Addressable Storage layer for Go.
 
-[![godoc](https://chronos-tachyon.net/img/godoc-badge.svg)](https://godoc.org/github.com/chronos-tachyon/go-cas)
-[![Build Status](https://travis-ci.org/chronos-tachyon/go-cas.svg)](https://travis-ci.org/chronos-tachyon/go-cas)
+[![godoc](https://chronos-tachyon.net/img/godoc-badge.svg)](https://godoc.org/cloud9.tools/go/cas)
+[![Build Status](https://travis-ci.org/cloud9-tools/go-cas.svg)](https://travis-ci.org/cloud9-tools/go-cas)
+[![Coverage Status](https://coveralls.io/repos/cloud9-tools/go-cas/badge.svg)](https://coveralls.io/r/cloud9-tools/go-cas)
 
 This is an *EARLY BETA*.  It mostly kinda works, but the unittests are still
 fairly incomplete, there are no regression tests yet, there's no benchmarking,
