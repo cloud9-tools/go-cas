@@ -1,7 +1,7 @@
 # go-cas
 A Content-Addressable Storage layer for Go.
 
-[![godoc](https://chronos-tachyon.net/img/godoc-badge.svg)](https://godoc.org/cloud9.tools/go/cas)
+[![godoc](https://chronos-tachyon.net/img/godoc-badge.svg)](https://godoc.org/github.com/cloud9-tools/go-cas)
 [![Build Status](https://travis-ci.org/cloud9-tools/go-cas.svg)](https://travis-ci.org/cloud9-tools/go-cas)
 [![Coverage Status](https://coveralls.io/repos/cloud9-tools/go-cas/badge.svg)](https://coveralls.io/r/cloud9-tools/go-cas)
 
