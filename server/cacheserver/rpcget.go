@@ -9,7 +9,6 @@ import (
 	"github.com/cloud9-tools/go-cas/common"
 	"github.com/cloud9-tools/go-cas/internal"
 	"github.com/cloud9-tools/go-cas/proto"
-	"github.com/cloud9-tools/go-cas/server"
 )
 
 func (srv *Server) Get(ctx context.Context, in *proto.GetRequest) (out *proto.GetReply, err error) {

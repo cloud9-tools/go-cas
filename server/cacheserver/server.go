@@ -8,7 +8,6 @@ import (
 
 	"github.com/cloud9-tools/go-cas/client"
 	"github.com/cloud9-tools/go-cas/common"
-	"github.com/cloud9-tools/go-cas/server"
 	"github.com/cloud9-tools/go-cas/server/auth"
 )
 

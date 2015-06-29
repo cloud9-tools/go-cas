@@ -7,7 +7,6 @@ import (
 
 	"github.com/cloud9-tools/go-cas/common"
 	"github.com/cloud9-tools/go-cas/internal"
-	"github.com/cloud9-tools/go-cas/server"
 )
 
 const maxuint32 = ^uint32(0)
