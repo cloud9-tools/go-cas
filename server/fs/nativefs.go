@@ -8,7 +8,6 @@ import (
 	"path/filepath"
 
 	"github.com/cloud9-tools/go-cas/common"
-	"github.com/cloud9-tools/go-cas/server"
 )
 
 func (wt WriteType) flag() int {
@@ -140,12 +139,12 @@ func (f NativeBlockFile) Close() error {
 	return f.Handle.Close()
 }
 
-func (f NativeBlockFile) ReadBlock(blknum uint32, block *server.Block) error {
+func (f NativeBlockFile) ReadBlock(blknum uint32, block *common.Block) error {
 	offset := int64(blknum) * common.BlockSize
 	return readExactlyAt(f.Handle, block[:], offset)
 }
 
-func (f NativeBlockFile) WriteBlock(blknum uint32, block *server.Block) error {
+func (f NativeBlockFile) WriteBlock(blknum uint32, block *common.Block) error {
 	offset := int64(blknum) * common.BlockSize
 	if err := writeExactlyAt(f.Handle, block[:], offset); err != nil {
 		return err
@@ -156,7 +155,7 @@ func (f NativeBlockFile) WriteBlock(blknum uint32, block *server.Block) error {
 	return nil
 }
 
-var empty, shred55, shredAA, shredFF server.Block
+var empty, shred55, shredAA, shredFF common.Block
 
 func init() {
 	copy(shred55[:], bytes.Repeat([]byte{0x55}, common.BlockSize))
@@ -168,7 +167,7 @@ func (f NativeBlockFile) EraseBlock(blknum uint32, shred bool) error {
 	offset := int64(blknum) * common.BlockSize
 
 	if shred {
-		var random server.Block
+		var random common.Block
 		if _, err := rand.Read(random[:]); err != nil {
 			return err
 		}

@@ -6,6 +6,7 @@ import (
 	"google.golang.org/grpc/codes"
 
 	"github.com/cloud9-tools/go-cas/client"
+	"github.com/cloud9-tools/go-cas/common"
 	"github.com/cloud9-tools/go-cas/internal"
 	"github.com/cloud9-tools/go-cas/proto"
 	"github.com/cloud9-tools/go-cas/server"
@@ -17,7 +18,7 @@ func (srv *Server) Get(ctx context.Context, in *proto.GetRequest) (out *proto.Ge
 		return nil, err
 	}
 
-	var addr server.Addr
+	var addr common.Addr
 	if err := addr.Parse(in.Addr); err != nil {
 		return nil, err
 	}
@@ -63,7 +64,7 @@ func (srv *Server) Get(ctx context.Context, in *proto.GetRequest) (out *proto.Ge
 	return out, err
 }
 
-func doBypassGet(fallback client.Client, ctx context.Context, addr server.Addr) (*entry, error) {
+func doBypassGet(fallback client.Client, ctx context.Context, addr common.Addr) (*entry, error) {
 	out, err := fallback.Get(ctx, &proto.GetRequest{
 		Addr:    addr.String(),
 		NoBlock: false,
@@ -74,7 +75,7 @@ func doBypassGet(fallback client.Client, ctx context.Context, addr server.Addr) 
 	if !out.Found {
 		return nil, nil
 	}
-	block := &server.Block{}
+	block := &common.Block{}
 	if err := block.Pad(out.Block); err != nil {
 		return nil, grpc.Errorf(codes.Internal, "go-cas/server/cacheserver: problem with remote server response: %v", err)
 	}

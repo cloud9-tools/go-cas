@@ -7,8 +7,8 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 
+	"github.com/cloud9-tools/go-cas/common"
 	"github.com/cloud9-tools/go-cas/proto"
-	"github.com/cloud9-tools/go-cas/server"
 )
 
 func (srv *Server) Put(ctx context.Context, in *proto.PutRequest) (out *proto.PutReply, err error) {
@@ -30,7 +30,7 @@ func (srv *Server) Put(ctx context.Context, in *proto.PutRequest) (out *proto.Pu
 		log.Printf("-- END Put: out=%#v err=%v", out, err)
 	}()
 
-	var block server.Block
+	var block common.Block
 	if err = block.Pad(in.Block); err != nil {
 		err = grpc.Errorf(codes.InvalidArgument, "%v", err)
 		return
@@ -38,12 +38,12 @@ func (srv *Server) Put(ctx context.Context, in *proto.PutRequest) (out *proto.Pu
 
 	addr := block.Addr()
 	if in.Addr != "" {
-		var expected server.Addr
+		var expected common.Addr
 		if err = expected.Parse(in.Addr); err != nil {
 			err = grpc.Errorf(codes.InvalidArgument, "%v", err)
 			return
 		}
-		if err = server.Verify(expected, addr); err != nil {
+		if err = common.Verify(expected, addr); err != nil {
 			err = grpc.Errorf(codes.DataLoss, "%v", err)
 			return
 		}

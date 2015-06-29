@@ -7,7 +7,7 @@ import (
 	"sort"
 	"sync"
 
-	"github.com/cloud9-tools/go-cas/server"
+	"github.com/cloud9-tools/go-cas/common"
 	"github.com/cloud9-tools/go-cas/server/fs"
 )
 
@@ -24,7 +24,7 @@ type Metadata struct {
 }
 type UsedBlockList []UsedBlock
 type UsedBlock struct {
-	Addr        server.Addr
+	Addr        common.Addr
 	BlockNumber uint32
 }
 type FreeBlockList []uint32
@@ -37,7 +37,7 @@ func (x FreeBlockList) Len() int           { return len(x) }
 func (x FreeBlockList) Less(i, j int) bool { return x[i] < x[j] }
 func (x FreeBlockList) Swap(i, j int)      { x[i], x[j] = x[j], x[i] }
 
-func (md *Metadata) Search(addr server.Addr) (slot int, blknum uint32, found bool) {
+func (md *Metadata) Search(addr common.Addr) (slot int, blknum uint32, found bool) {
 	slot = sort.Search(len(md.Used), func(i int) bool {
 		return !md.Used[i].Addr.Less(addr)
 	})
@@ -48,7 +48,7 @@ func (md *Metadata) Search(addr server.Addr) (slot int, blknum uint32, found boo
 	return
 }
 
-func (md *Metadata) Insert(slot int, addr server.Addr) (blknum uint32, inserted bool) {
+func (md *Metadata) Insert(slot int, addr common.Addr) (blknum uint32, inserted bool) {
 	if slot < len(md.Used) && md.Used[slot].Addr == addr {
 		blknum = md.Used[slot].BlockNumber
 		return
@@ -81,7 +81,7 @@ func (md *Metadata) Insert(slot int, addr server.Addr) (blknum uint32, inserted 
 	return
 }
 
-func (md *Metadata) Remove(slot int, addr server.Addr) (minUnused uint32, deleted bool) {
+func (md *Metadata) Remove(slot int, addr common.Addr) (minUnused uint32, deleted bool) {
 	max := len(md.Used) - 1
 	if slot > max || md.Used[slot].Addr != addr {
 		return maxuint32, false
@@ -147,7 +147,7 @@ func ReadMetadata(primaryFile, secondaryFile fs.File, metadata *Metadata) (err e
 	numUsed = binary.BigEndian.Uint32(raw[8:12])
 	numFree = binary.BigEndian.Uint32(raw[12:16])
 
-	requiredLength = metadataFormatLen + numUsed*(server.AddrSize+4) + numFree*4
+	requiredLength = metadataFormatLen + numUsed*(common.AddrSize+4) + numFree*4
 	if len(raw) < int(requiredLength) {
 		reason = fmt.Errorf("unexpected EOF -- missing %d bytes", int(requiredLength)-len(raw))
 		goto TryBackup
@@ -156,9 +156,9 @@ func ReadMetadata(primaryFile, secondaryFile fs.File, metadata *Metadata) (err e
 
 	md.Used = make(UsedBlockList, numUsed)
 	for slot := range md.Used {
-		var addr server.Addr
-		copy(addr[:], raw[n:n+server.AddrSize])
-		n += server.AddrSize
+		var addr common.Addr
+		copy(addr[:], raw[n:n+common.AddrSize])
+		n += common.AddrSize
 		blknum := binary.BigEndian.Uint32(raw[n : n+4])
 		n += 4
 		md.Used[slot].Addr = addr

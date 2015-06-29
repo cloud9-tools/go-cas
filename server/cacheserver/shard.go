@@ -5,6 +5,7 @@ import (
 	"sort"
 	"sync"
 
+	"github.com/cloud9-tools/go-cas/common"
 	"github.com/cloud9-tools/go-cas/internal"
 	"github.com/cloud9-tools/go-cas/server"
 )
@@ -31,26 +32,26 @@ type shard struct {
 
 	// byAddr is a map that allows looking up an entry by its .Addr field.
 	// Each item in Entries should have a corresponding row in this map.
-	byAddr map[server.Addr]*entry
+	byAddr map[common.Addr]*entry
 
 	// busy is a map that keeps track of outstanding RPCs to the backend.
 	// If an RPC is in flight, then a Cond will be present and any
 	// operations should Cond.Wait() until the row is deleted.
-	busy map[server.Addr]*sync.Cond
+	busy map[common.Addr]*sync.Cond
 }
 
 type entry struct {
 	bumped uint32
-	block  *server.Block
-	addr   server.Addr
+	block  *common.Block
+	addr   common.Addr
 }
 
 func NewShard(perShardMax uint32) *shard {
 	return &shard{
 		max:     perShardMax,
 		entries: make([]*entry, 0, perShardMax),
-		byAddr:  make(map[server.Addr]*entry, perShardMax),
-		busy:    make(map[server.Addr]*sync.Cond, 2),
+		byAddr:  make(map[common.Addr]*entry, perShardMax),
+		busy:    make(map[common.Addr]*sync.Cond, 2),
 	}
 }
 
@@ -93,7 +94,7 @@ func (s *shard) RemoveAtIndex(i int) {
 }
 
 // Await blocks if some other thread is working on addr.
-func (s *shard) Await(addr server.Addr) {
+func (s *shard) Await(addr common.Addr) {
 	cond := s.busy[addr]
 	for cond != nil {
 		cond.Wait()
@@ -102,12 +103,12 @@ func (s *shard) Await(addr server.Addr) {
 }
 
 // MarkBusy tells other threads to wait for this one.
-func (s *shard) MarkBusy(addr server.Addr) {
+func (s *shard) MarkBusy(addr common.Addr) {
 	s.busy[addr] = sync.NewCond(&s.mutex)
 }
 
 // UnmarkBusy alerts other threads that they can proceed.
-func (s *shard) UnmarkBusy(addr server.Addr) {
+func (s *shard) UnmarkBusy(addr common.Addr) {
 	cond := s.busy[addr]
 	delete(s.busy, addr)
 	cond.Broadcast()
@@ -131,7 +132,7 @@ func (s *shard) TryInsert(e *entry) {
 }
 
 // Remove forgets the cache entry associated with addr.
-func (s *shard) Remove(addr server.Addr) {
+func (s *shard) Remove(addr common.Addr) {
 	delete(s.byAddr, addr)
 	for i, e := range s.entries {
 		if e.addr == addr {

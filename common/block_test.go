@@ -1,11 +1,9 @@
-package server
+package common
 
 import (
 	"bytes"
 	"fmt"
 	"testing"
-
-	"github.com/cloud9-tools/go-cas/common"
 )
 
 func TestBlock_Addr(t *testing.T) {
@@ -15,7 +13,7 @@ func TestBlock_Addr(t *testing.T) {
 	if addr.String() != expected00 {
 		t.Errorf("0x00 block: expected %q, got %q", expected00, addr.String())
 	}
-	copy(block[:], bytes.Repeat([]byte{0x42}, common.BlockSize))
+	copy(block[:], bytes.Repeat([]byte{0x42}, BlockSize))
 	addr = block.Addr()
 	expected42 := "70ca3c88438a7db923ae9ac3e8c2ccb1d7a0dda6"
 	if addr.String() != expected42 {
@@ -32,7 +30,7 @@ func TestBlock_Addr(t *testing.T) {
 }
 
 func TestBlock_GoString(t *testing.T) {
-	var length = fmt.Sprintf("%d", common.BlockSize)
+	var length = fmt.Sprintf("%d", BlockSize)
 
 	var block Block
 	actual := block.GoString()
@@ -41,7 +39,7 @@ func TestBlock_GoString(t *testing.T) {
 		t.Errorf("0x00 block: GoString: %q != %q", expected, actual)
 	}
 
-	copy(block[:], bytes.Repeat([]byte{0x42}, common.BlockSize))
+	copy(block[:], bytes.Repeat([]byte{0x42}, BlockSize))
 	actual = block.GoString()
 	expected = "cas.Block{0x42, 0x42, 0x42, 0x42, 0x42, 0x42, 0x42, 0x42, ..., len=" + length + "}"
 	if actual != expected {
@@ -59,7 +57,7 @@ func TestBlock_GoString(t *testing.T) {
 
 func TestBlock_Pad_too_long(t *testing.T) {
 	var block Block
-	input := make([]byte, common.BlockSize+1)
+	input := make([]byte, BlockSize+1)
 	actual := block.Pad(input)
 	expected := ErrBlockTooLong
 	if actual != expected {

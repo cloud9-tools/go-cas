@@ -7,8 +7,8 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 
+	"github.com/cloud9-tools/go-cas/common"
 	"github.com/cloud9-tools/go-cas/proto"
-	"github.com/cloud9-tools/go-cas/server"
 	"github.com/cloud9-tools/go-multierror"
 )
 
@@ -42,7 +42,7 @@ func (srv *Server) Walk(in *proto.WalkRequest, stream proto.CAS_WalkServer) (err
 		reply := &proto.WalkReply{}
 		reply.Addr = used.Addr.String()
 		if re != nil || in.WantBlocks {
-			var block server.Block
+			var block common.Block
 			err = srv.DataFile.ReadBlock(used.BlockNumber, &block)
 			if err != nil {
 				errors = append(errors, err)

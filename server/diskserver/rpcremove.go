@@ -7,8 +7,8 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 
+	"github.com/cloud9-tools/go-cas/common"
 	"github.com/cloud9-tools/go-cas/proto"
-	"github.com/cloud9-tools/go-cas/server"
 )
 
 func (srv *Server) Remove(ctx context.Context, in *proto.RemoveRequest) (out *proto.RemoveReply, err error) {
@@ -26,7 +26,7 @@ func (srv *Server) Remove(ctx context.Context, in *proto.RemoveRequest) (out *pr
 		log.Printf("-- END Remove: out=%#v err=%v", out, err)
 	}()
 
-	var addr server.Addr
+	var addr common.Addr
 	if err = addr.Parse(in.Addr); err != nil {
 		err = grpc.Errorf(codes.InvalidArgument, "%v", err)
 		return

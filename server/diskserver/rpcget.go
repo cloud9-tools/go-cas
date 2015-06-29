@@ -7,8 +7,8 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 
+	"github.com/cloud9-tools/go-cas/common"
 	"github.com/cloud9-tools/go-cas/proto"
-	"github.com/cloud9-tools/go-cas/server"
 )
 
 func (srv *Server) Get(ctx context.Context, in *proto.GetRequest) (out *proto.GetReply, err error) {
@@ -30,7 +30,7 @@ func (srv *Server) Get(ctx context.Context, in *proto.GetRequest) (out *proto.Ge
 		log.Printf("-- END Get: out=%#v err=%v", sanitizedOut, err)
 	}()
 
-	var addr server.Addr
+	var addr common.Addr
 	if err = addr.Parse(in.Addr); err != nil {
 		err = grpc.Errorf(codes.InvalidArgument, "%v", err)
 		return
@@ -43,12 +43,12 @@ func (srv *Server) Get(ctx context.Context, in *proto.GetRequest) (out *proto.Ge
 	if !found {
 		return
 	}
-	var block server.Block
+	var block common.Block
 	if err = srv.DataFile.ReadBlock(blknum, &block); err != nil {
 		err = grpc.Errorf(codes.Unknown, "%v", err)
 		return
 	}
-	if err = server.Verify(addr, block.Addr()); err != nil {
+	if err = common.Verify(addr, block.Addr()); err != nil {
 		err = grpc.Errorf(codes.DataLoss, "%v", err)
 		return
 	}

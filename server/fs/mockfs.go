@@ -4,8 +4,8 @@
 package fs
 
 import (
-	server "github.com/cloud9-tools/go-cas/server"
 	gomock "github.com/golang/mock/gomock"
+	common "github.com/cloud9-tools/go-cas/common"
 )
 
 // Mock of FileSystem interface
@@ -83,6 +83,16 @@ func (_m *MockFile) EXPECT() *_MockFileRecorder {
 	return _m.recorder
 }
 
+func (_m *MockFile) Name() string {
+	ret := _m.ctrl.Call(_m, "Name")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+func (_mr *_MockFileRecorder) Name() *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "Name")
+}
+
 func (_m *MockFile) Close() error {
 	ret := _m.ctrl.Call(_m, "Close")
 	ret0, _ := ret[0].(error)
@@ -135,6 +145,16 @@ func (_m *MockBlockFile) EXPECT() *_MockBlockFileRecorder {
 	return _m.recorder
 }
 
+func (_m *MockBlockFile) Name() string {
+	ret := _m.ctrl.Call(_m, "Name")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+func (_mr *_MockBlockFileRecorder) Name() *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "Name")
+}
+
 func (_m *MockBlockFile) Close() error {
 	ret := _m.ctrl.Call(_m, "Close")
 	ret0, _ := ret[0].(error)
@@ -145,7 +165,7 @@ func (_mr *_MockBlockFileRecorder) Close() *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "Close")
 }
 
-func (_m *MockBlockFile) ReadBlock(blknum uint32, block *server.Block) error {
+func (_m *MockBlockFile) ReadBlock(blknum uint32, block *common.Block) error {
 	ret := _m.ctrl.Call(_m, "ReadBlock", blknum, block)
 	ret0, _ := ret[0].(error)
 	return ret0
@@ -155,7 +175,7 @@ func (_mr *_MockBlockFileRecorder) ReadBlock(arg0, arg1 interface{}) *gomock.Cal
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "ReadBlock", arg0, arg1)
 }
 
-func (_m *MockBlockFile) WriteBlock(blknum uint32, block *server.Block) error {
+func (_m *MockBlockFile) WriteBlock(blknum uint32, block *common.Block) error {
 	ret := _m.ctrl.Call(_m, "WriteBlock", blknum, block)
 	ret0, _ := ret[0].(error)
 	return ret0
@@ -165,12 +185,12 @@ func (_mr *_MockBlockFileRecorder) WriteBlock(arg0, arg1 interface{}) *gomock.Ca
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "WriteBlock", arg0, arg1)
 }
 
-func (_m *MockBlockFile) EraseBlock(blknum uint32) error {
-	ret := _m.ctrl.Call(_m, "EraseBlock", blknum)
+func (_m *MockBlockFile) EraseBlock(blknum uint32, shred bool) error {
+	ret := _m.ctrl.Call(_m, "EraseBlock", blknum, shred)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-func (_mr *_MockBlockFileRecorder) EraseBlock(arg0 interface{}) *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "EraseBlock", arg0)
+func (_mr *_MockBlockFileRecorder) EraseBlock(arg0, arg1 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "EraseBlock", arg0, arg1)
 }

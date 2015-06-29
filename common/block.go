@@ -1,19 +1,17 @@
-package server
+package common
 
 import (
 	"bytes"
 	"crypto/sha1"
 	"errors"
 	"fmt"
-
-	"github.com/cloud9-tools/go-cas/common"
 )
 
-var ErrBlockTooLong = errors.New("CAS block is too long")
+var ErrBlockTooLong = errors.New("go-cas: block is too long")
 
 // Block is a single CAS block.  Size information is not preserved.
 // To store large objects, split them into multiple CAS blocks.
-type Block [common.BlockSize]byte
+type Block [BlockSize]byte
 
 // Clear sets this CAS block to all zeroes.
 func (block *Block) Clear() {
@@ -26,7 +24,7 @@ func (block *Block) IsZero() bool {
 
 // Pad sets this CAS block to the given data, padding with zeroes as needed.
 func (block *Block) Pad(raw []byte) error {
-	if len(raw) > common.BlockSize {
+	if len(raw) > BlockSize {
 		return ErrBlockTooLong
 	}
 	block.Clear()

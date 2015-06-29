@@ -1,4 +1,4 @@
-package server
+package common
 
 import (
 	"encoding/hex"
@@ -7,7 +7,7 @@ import (
 	"github.com/cloud9-tools/go-cas/internal"
 )
 
-const addrParseFmtPrefix = "go-cas/server: failed to parse %q as Addr: "
+const addrParseFmtPrefix = "go-cas: failed to parse %q as Addr: "
 const addrParseLenFmt = addrParseFmtPrefix + "expected length 40, got length %d"
 const addrParseDecodeFmt = addrParseFmtPrefix + "%v"
 

@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/cloud9-tools/go-cas/client"
+	"github.com/cloud9-tools/go-cas/common"
 	"github.com/cloud9-tools/go-cas/server"
 	"github.com/cloud9-tools/go-cas/server/auth"
 )
@@ -70,7 +71,7 @@ func (srv *Server) Close() error {
 	return srv.fallback.Close()
 }
 
-func (srv *Server) shardFor(addr server.Addr) *shard {
+func (srv *Server) shardFor(addr common.Addr) *shard {
 	i := binary.BigEndian.Uint32(addr[:]) % uint32(len(srv.shards))
 	log.Printf("addr=%q, shard=%d", addr, i)
 	return srv.shards[i]

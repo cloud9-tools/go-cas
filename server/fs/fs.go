@@ -1,13 +1,13 @@
 package fs
 
-//go:generate mockgen -source=fs.go -package=fs -destination=mockfs.go
-//go:generate stringer -type=WriteType
-
 import (
 	"errors"
 
-	"github.com/cloud9-tools/go-cas/server"
+	"github.com/cloud9-tools/go-cas/common"
 )
+
+//go:generate mockgen -source=fs.go -package=fs -destination=mockfs.go
+//go:generate stringer -type=WriteType
 
 var ErrNotFound = errors.New("not found")
 var ErrNotSupported = errors.New("not supported")
@@ -36,7 +36,7 @@ type File interface {
 type BlockFile interface {
 	Name() string
 	Close() error
-	ReadBlock(blknum uint32, block *server.Block) error
-	WriteBlock(blknum uint32, block *server.Block) error
+	ReadBlock(blknum uint32, block *common.Block) error
+	WriteBlock(blknum uint32, block *common.Block) error
 	EraseBlock(blknum uint32, shred bool) error
 }

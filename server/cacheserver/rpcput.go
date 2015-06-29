@@ -3,6 +3,7 @@ package cacheserver
 import (
 	"golang.org/x/net/context"
 
+	"github.com/cloud9-tools/go-cas/common"
 	"github.com/cloud9-tools/go-cas/internal"
 	"github.com/cloud9-tools/go-cas/proto"
 	"github.com/cloud9-tools/go-cas/server"
@@ -14,7 +15,7 @@ func (srv *Server) Put(ctx context.Context, in *proto.PutRequest) (out *proto.Pu
 		return nil, err
 	}
 
-	var block server.Block
+	var block common.Block
 	if err := block.Pad(in.Block); err != nil {
 		return nil, err
 	}
